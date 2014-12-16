@@ -1,0 +1,50 @@
+<?xml version='1.0' encoding='utf-8'?>
+<epm xmlns='http://eprints.org/ep2/data/2.0' id='http://test3312.drs/id/epm/orcidt2'>
+  <epmid>orcidt2</epmid>
+  <uri>http://test3312.drs/id/epm/orcidt2</uri>
+  <documents>
+    <document>
+      <files>
+        <file>
+          <filename>static/images/epm/orcid_icon.png</filename>
+          <mime_type>inode/symlink</mime_type>
+          <hash>a21b994f36cf9456203d602f5e2e22cd</hash>
+          <hash_type>MD5</hash_type>
+          <filesize>190077</filesize>
+        </file>
+      </files>
+      <mime_type>inode/symlink</mime_type>
+      <format>other</format>
+      <main>static/images/epm/orcid_icon.png</main>
+      <content>install</content>
+    </document>
+    <document>
+      <files>
+        <file>
+          <filename>static/images/epm/orcid_icon.png</filename>
+          <mime_type>inode/symlink</mime_type>
+          <hash>a21b994f36cf9456203d602f5e2e22cd</hash>
+          <hash_type>MD5</hash_type>
+          <filesize>190077</filesize>
+        </file>
+      </files>
+      <format>image</format>
+      <main>static/images/epm/orcid_icon.png</main>
+      <content>coverimage</content>
+    </document>
+  </documents>
+  <version>1.0.0</version>
+  <creators>
+    <item>
+      <name>
+        <family>West</family>
+        <given>P</given>
+      </name>
+      <id>pjw@repositoryservices.co.uk</id>
+    </item>
+  </creators>
+  <title>ORCID Framework</title>
+  <description>ORCID Tier 2 OAuth Framework</description>
+  <home_page>https://github.com/eprintsug/orcidt2</home_page>
+  <icon>images/epm/orcid_icon.png</icon>
+</epm>
