@@ -1,0 +1,137 @@
+# Orcid AUTH script
+
+use HTTP::Request::Common;
+use EPrints;
+use strict;
+my $repo = new EPrints::Session;
+exit( 0 ) unless( defined $repo );
+
+my $CODE_LEN = 6;
+
+my $state = $repo->param( "state" );
+my $code = $repo->param( "code" );
+print STDERR "####### orcid auth script called with state[".$state."] code [".$code."]\n";
+
+
+unless ( $code && length( $code ) == $CODE_LEN )
+{
+	show_error( $repo, 'invalid_code' );
+	$repo->terminate;
+        exit;
+}
+my $user_id;
+my $item_id;
+my $action;
+if ( $state && $state =~ /u(\d+)i(\d+)a(\d+)/ )
+{
+	$user_id = $1;
+	$item_id = $2;
+	$action = $3;
+print STDERR "####### orcid auth script got state user_id[$user_id] item_id[$item_id] action[$action]\n";
+}
+else
+{
+print STDERR "####### orcid auth script invalid state\n";
+	show_error( $repo, 'invalid_state' );
+	$repo->terminate;
+        exit;
+}
+
+
+
+print STDERR "\n\n####### about to exchange \n\n";
+# Exchange the Authorization Code for an Access Token with the Client ID and Secret.
+
+my $request = POST( $repo->config( "orcid_exchange_url" ), 
+	[
+		client_id => $repo->config( "orcid_client_id" ),
+		client_secret => $repo->config( "orcid_client_secret" ),
+		grant_type => "authorization_code",
+		code	=>	$code, 
+		redirect_uri => $repo->config( "orcid_redirect_uri" ),
+	] );
+
+$request->header( "accept" => "application/json" );
+
+my $ua = LWP::UserAgent->new;
+my $response = $ua->request($request);
+
+print STDERR "\n\n####### got exchange response \n\n";
+
+if (200 != $response->code)
+{
+
+print STDERR "####### orcid auth script failed to exchange\n";
+	show_error( $repo, 'exchange_failed' );
+	$repo->terminate;
+        exit;
+}
+
+#print STDERR "####### orcid auth script got exchange response \n";
+my $content = $response->content;
+my $json_vars = JSON::decode_json($content);
+my $token = $json_vars->{access_token};
+my $token_type = $json_vars->{token_type};
+my $refresh_token = $json_vars->{refresh_token};
+my $expires_in = $json_vars->{expires_in};
+my $r_scope = $json_vars->{scope};
+my $r_orcid = $json_vars->{orcid};
+
+#print STDERR "####### orcid auth script got exchange response token [ $token ] for action[ $action ] scope[$r_scope] orcid[$r_orcid]\n";
+
+# we are now authenticated so we can perform the appropriate action for the scope if we have an appropriate plugin.
+my $plugin = $repo->plugin( "Orcid::Auth" ); 
+my @plist = $repo->get_plugins( type => "Orcid", scope => $r_scope ); 
+$plugin = $plist[0] if ( @plist );
+my $complete = $plugin->perform_action( $r_scope, $r_orcid, $token, $action, $user_id, $item_id );
+
+if ( $complete )
+{
+	$repo->terminate;
+	exit;
+}
+
+#	my $work_xml = $repo->call( "form_orcid_work_xml", $repo, $item_id );
+#
+#	my $w_url = $repo->config( "orcid_tier_2_api" );
+#	$w_url .= "v1.1/$r_orcid/orcid-works";
+#
+#	my $w_request = POST( $w_url, 
+#	[
+##need to post the data !!!!
+#		client_id => $repo->config( "orcid_client_id" ),
+#		client_secret => $repo->config( "orcid_client_secret" ),
+#		grant_type => "authorization_code",
+#		code	=>	$code, 
+#		redirect_uri => $repo->config( "orcid_redirect_uri" ),
+#	] );
+#
+#$w_request->header( "Authorization: " => "$token_type $token" );
+#$w_request->header( "Content-Type: " => "application/orcid+xml" );
+#
+#my $wua = LWP::UserAgent->new;
+#my $w_response = $wua->request($w_request);
+#
+#print STDERR "work response [".Data::Dumper::Dumper($w_response)."]\n";
+#
+
+print STDERR "plugin not complete so redirect and exit\n";
+$repo->redirect( $repo->config( 'userhome' ) );
+
+$repo->terminate;
+exit;
+
+
+sub show_error
+{
+	my( $repo, $error_id ) = @_;
+
+	my $title = $repo->html_phrase( "cgi/orcid/auth:title" );
+	my $page = $repo->make_doc_fragment;
+	$page->appendChild( $repo->render_message( 'error', $repo->html_phrase( "cgi/orcid/auth:error:$error_id" ) ) );
+
+	$repo->build_page( $title, $page, "loginshib" );
+	$repo->send_page();
+}
+
+

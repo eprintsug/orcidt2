@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE phrases SYSTEM "entities.dtd">
+<epp:phrases xmlns="http://www.w3.org/1999/xhtml" xmlns:epp="http://eprints.org/ep3/phrase" xmlns:epc="http://eprints.org/ep3/control">
+
+<epp:phrase id="Plugin/Screen/Import/Orcid:no_user_orcid_field">You need to configure your user dataset ORCID iD field</epp:phrase>
+<epp:phrase id="Plugin/Screen/Import/Orcid:no_user_orcid">It has not been possible to find the ORCID iD associated with this user account</epp:phrase>
+
+<epp:phrase id="Plugin/Screen/Import/Orcid:help"><div style="text-align: center; ">Works known to ORCID are listed below followed by your items that are not known to ORCID</div><br/></epp:phrase>
+
+<epp:phrase id="cgi/orcid/auth:title">ORCID Interface</epp:phrase>
+<epp:phrase id="cgi/orcid/auth:error:invalid_state">An error has occured while authenticating the request.</epp:phrase>
+<epp:phrase id="cgi/orcid/auth:error:invalid_code">The requested action was not authorised.</epp:phrase>
+
+</epp:phrases>
