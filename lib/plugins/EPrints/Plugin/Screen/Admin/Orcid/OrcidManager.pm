@@ -337,6 +337,7 @@ sub render_table_row_with_import
 	my $plugin_map = {
 		"DOI" => "DOI",
 		"BIBTEX" => "BibTeX",
+                "PMID" => "PubMedID",
 	};
 
 	my $repo = $self->{session};
