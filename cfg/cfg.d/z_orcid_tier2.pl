@@ -212,7 +212,7 @@ $c->{orcid_activity_map} = {
 
 $c->{orcid_work_type_map} = {
 	article => "journal-article",
-	magazine_article => "magazine article",
+	magazine_article => "magazine-article",
 	book_section => "book-chapter",
 	book => "book",
 	report => "report",
