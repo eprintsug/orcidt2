@@ -23,35 +23,25 @@ $c->{plugins}->{"Screen::User::Orcid::OrcidManager"}->{params}->{disable} = 0;
 
 #
 # new user fields for persistent authorisation tokens obtained via OAuth.
-# see: http://support.orcid.org/knowledgebase/articles/120162-orcid-scopes
+# see: http://members.orcid.org/api/orcid-scopes
 #
 push @{$c->{fields}->{user}},
-{ name => 'orcid_profile_rl_token', type => 'text', },
-{ name => 'orcid_bio_rl_token', type => 'text', },
-{ name => 'orcid_works_rl_token', type => 'text', },
-{ name => 'orcid_works_c_token', type => 'text', },
-{ name => 'orcid_bio_extern_ids_c_token', type => 'text', },
-{ name => 'orcid_affiliations_c_token', type => 'text', },
-{ name => 'orcid_funding_c_token', type => 'text', },
+{ name => 'orcid_rl_token', type => 'text', },
+{ name => 'orcid_act_u_token', type => 'text', },
 { name => 'orcid_bio_u_token', type => 'text', },
-{ name => 'orcid_works_u_token', type => 'text', },
-{ name => 'orcid_affiliations_u_token', type => 'text', },
-{ name => 'orcid_funding_u_token', type => 'text', },
-;
 
-#
-# fields for persistent authorisation tokens obtained via Client Credentials.
-# see: http://support.orcid.org/knowledgebase/articles/117230
-#
-#
-# curl -i -L -H 'Accept: application/json' -d 'client_id=0000-0002-9353-5519' -d 'client_secret=1470a572-1e0d-4e7d-899a-c9eafca4e05d' -d 'scope=/read-public' -d 'grant_type=client_credentials' 'https://api.sandbox.orcid.org/oauth/token'
-#
-#
-#curl -i -L -H 'Accept: application/json' -d 'client_id=0000-0002-1572-7910' -d 'client_secret=4bfb0aca-d757-4d2f-bded-4d14bfa30f00' -d 'scope=/read-public' -d 'grant_type=client_credentials' 'https://api.sandbox.orcid.org/oauth/token'
-#
-$c->{orcid_read_public_token} = "23296131-86b4-4943-adba-6e9f8d6ea7c4";
-$c->{orcid_profile_c_token} = "22";
-$c->{orcid_webhook_token} = "22";
+#{ name => 'orcid_profile_rl_token', type => 'text', },
+#{ name => 'orcid_bio_rl_token', type => 'text', },
+#{ name => 'orcid_works_rl_token', type => 'text', },
+#{ name => 'orcid_works_c_token', type => 'text', },
+#{ name => 'orcid_bio_extern_ids_c_token', type => 'text', },
+#{ name => 'orcid_affiliations_c_token', type => 'text', },
+#{ name => 'orcid_funding_c_token', type => 'text', },
+#{ name => 'orcid_bio_u_token', type => 'text', },
+#{ name => 'orcid_works_u_token', type => 'text', },
+#{ name => 'orcid_affiliations_u_token', type => 'text', },
+#{ name => 'orcid_funding_u_token', type => 'text', },
+;
 
 #
 # repository field mapping
@@ -95,60 +85,60 @@ $c->{orcid_activity_map} = {
 		token_type	=> "single",
 		},
 	read_record => {
-		scope 		=> "/orcid-profile/read-limited",
+		scope 		=> "/read-limited",
 		request		=> "orcid-profile",
 		activity_id	=> '01',
 		desc		=> "Retrieve information from a user's ORCID record",
 		token_type	=> "until_revoked",
-		token		=> "orcid_profile_rl_token",
+		token		=> "orcid_rl_token",
 		},
 	read_bio => {
-		scope 		=> "/orcid-bio/read-limited",
+		scope 		=> "/read-limited",
 		request		=> "orcid-bio",
 		activity_id	=> '01',
 		desc		=> "Retrieve information from a user's ORCID record",
 		token_type	=> "until_revoked",
-		token		=> "orcid_bio_rl_token",
+		token		=> "orcid_rl_token",
 		},
 	read_research => {
-		scope 		=> "/orcid-works/read-limited",
+		scope 		=> "/read-limited",
 		request		=> "orcid-works",
 		activity_id	=> '01',
 		desc		=> "Retrieve information from a user's ORCID record",
 		token_type	=> "until_revoked",
-		token		=> "orcid_works_rl_token",
+		token		=> "orcid_rl_token",
 		},
 	add_works => {
-		scope 		=> "/orcid-works/create",
+		scope 		=> "/activities/update",
 		request		=> "/orcid-works",
 		activity_id	=> '01',
 		desc		=> "Add research activities",
 		token_type	=> "until_revoked",
-		token		=> "orcid_works_c_token",
+		token		=> "orcid_act_u_token",
 		},
 	add_identifier => {
-		scope 		=> "/orcid-bio/external-identifiers/create",
+		scope 		=> "/orcid-bio/update",
 		request		=> "/orcid-bio/external-identifiers",
 		activity_id	=> '01',
 		desc		=> "Create a link between the user's account on your system and their ORCID iD",
 		token_type	=> "until_revoked",
-		token		=> "orcid_bio_extern_ids_c_token",
+		token		=> "orcid_bio_u_token",
 		},
 	add_affiliation => {
-		scope 		=> "/affiliations/create",
+		scope 		=> "/affiliations/update",
 		request		=> "/affiliations",
 		activity_id	=> '01',
 		desc		=> "Add an Affiliation",
 		token_type	=> "until_revoked",
-		token		=> "orcid_affiliations_c_token",
+		token		=> "orcid_act_u_token",
 		},
 	add_funding => {
-		scope 		=> "/funding/create",
+		scope 		=> "/activities/update",
 		request		=> "/funding",
 		activity_id	=> '01',
 		desc		=> "Add a Funding Source",
 		token_type	=> "until_revoked",
-		token		=> "orcid_funding_c_token",
+		token		=> "orcid_act_u_token",
 		},
 	update_bio => {
 		scope 		=> "/orcid-bio/update",
@@ -159,36 +149,28 @@ $c->{orcid_activity_map} = {
 		token		=> "orcid_bio_u_token",
 		},
 	update_works => {
-		scope 		=> "/orcid-works/update",
+		scope 		=> "/activities/update",
 		request		=> "orcid-works",
 		activity_id	=> '01',
 		desc		=> "Update works",
 		token_type	=> "until_revoked",
-		token		=> "orcid_works_u_token",
+		token		=> "orcid_act_u_token",
 		},
 	update_affiliation => {
-		scope 		=> "/affiliations/update",
+		scope 		=> "/activities/update",
 		request		=> "/affiliations",
 		activity_id	=> '01',
 		desc		=> "Update affiliations",
 		token_type	=> "until_revoked",
-		token		=> "orcid_affiliations_u_token",
+		token		=> "orcid_act_u_token",
 		},
 	update_funding => {
-		scope 		=> "/funding/update",
+		scope 		=> "/activities/update",
 		request		=> "/funding",
 		activity_id	=> '01',
 		desc		=> "Update funders",
 		token_type	=> "until_revoked",
-		token		=> "orcid_funding_u_token",
-		},
-	add_record => {
-		scope 		=> "/orcid-profile/create",
-		request		=> "/orcid-profile",
-		activity_id	=> '01',
-		desc		=> "Create a new ORCID record for a user / Have the user claim their ORCID record",
-		token_type	=> "client",
-		token		=> "orcid_profile_c_token",
+		token		=> "orcid_act_u_token",
 		},
 	read_public => {
 		scope 		=> "/read-public",
@@ -246,10 +228,17 @@ $c->{get_orcid_authorise_url} = sub
 	my $login_screen = "";
 	$login_screen = "&show_login=true&orcid=$orcid_id" if $orcid_id;
 
-	my $orcid_profile_scope = "/orcid-profile/read-limited";
+	my $orcid_profile_scope = "/read-limited";
 	if ( $activity )
 	{
-		$orcid_profile_scope = $activity_map->{$activity}->{scope};
+                if ( $activity eq "user_authenticate" )
+                {
+                        $orcid_profile_scope = "/authenticate /read-limited /activities/update /orcid-bio/update"; 
+                }
+                else
+                {
+                        $orcid_profile_scope = $activity_map->{$activity}->{scope};
+                }
 	}
 	my $orcid_authorise_url =  $repo->config( "orcid_tier_2_server" ) . 'oauth/authorize?' . 
 				'client_id=' . $repo->config( "orcid_client_id" ) .
@@ -412,6 +401,56 @@ print STDERR "form_orcid_work_xml [".$xml_str."]\n";
 	return $xml_str;
 
 };
+
+$c->{form_orcid_affiliation_xml} = sub
+{
+        my( $repo, $user, ) = @_;
+
+        my $xml = $repo->xml;
+        my $act_xml = $xml->create_element( "orcid-message",
+                'xmlns' => "http://www.orcid.org/ns/orcid",
+                'xmlns:xsi' => "http://www.w3.org/2001/XMLSchema-instance",
+                'xsi:schemaLocation' => "https://raw.github.com/ORCID/ORCID-Source/master/orcid-model/src/main/resources/orcid-message-1.2.xsd",
+        );
+
+        return $act_xml unless $user;
+
+        my $version = $act_xml->appendChild( $xml->create_element( "message-version" ) );
+        $version->appendChild( $xml->create_text_node( $repo->config( "orcid_version" ) ) );
+        my $profile = $act_xml->appendChild( $xml->create_element( "orcid-profile" ) );
+        my $activities = $profile->appendChild( $xml->create_element( "orcid-activities" ) );
+        my $affiliations = $activities->appendChild( $xml->create_element( "affiliations" ) );
+        my $affiliation = $affiliations->appendChild( $xml->create_element( "affiliation", visibility=>"public" ) );
+        my $type = $affiliation->appendChild( $xml->create_element( "type" ) );
+        $type->appendChild( $xml->create_text_node( "employment" ) );
+        #my $dept = $affiliation->appendChild( $xml->create_element( "department-name" ) );
+        #$dept->appendChild( $xml->create_text_node( "Department" ) );
+        #my $role = $affiliation->appendChild( $xml->create_element( "role-title" ) );
+        #$role->appendChild( $xml->create_text_node( "Role title" ) );
+        #my $start = $affiliation->appendChild( $xml->create_element( "start-date" ) );
+        #my $end = $affiliation->appendChild( $xml->create_element( "end-date" ) );
+        my $organisation = $affiliation->appendChild( $xml->create_element( "organization" ) );
+        my $org_name = $organisation->appendChild( $xml->create_element( "name" ) );
+        $org_name->appendChild( $xml->create_text_node( $repo->config( "org_ringgold_name" ) ) );
+        my $org_addr = $organisation->appendChild( $xml->create_element( "address" ) );
+        my $city = $org_addr->appendChild( $xml->create_element( "city" ) );
+        $city->appendChild( $xml->create_text_node( $repo->config( "org_ringgold_city" ) ) );
+        my $region = $org_addr->appendChild( $xml->create_element( "region" ) );
+        $region->appendChild( $xml->create_text_node( $repo->config( "org_ringgold_region" ) ) );
+        my $country = $org_addr->appendChild( $xml->create_element( "country" ) );
+        $country->appendChild( $xml->create_text_node( $repo->config( "org_ringgold_country" ) ) );
+        my $dissamb_org = $organisation->appendChild( $xml->create_element( "disambiguated-organization" ) );
+        my $dissamb_org_id = $dissamb_org->appendChild( $xml->create_element( "disambiguated-organization-identifier" ) );
+        $dissamb_org_id->appendChild( $xml->create_text_node( $repo->config( "org_ringgold_id" ) ) );
+        my $dissamb_org_src = $dissamb_org->appendChild( $xml->create_element( "disambiguation-source" ) );
+        $dissamb_org_src->appendChild( $xml->create_text_node( "RINGGOLD" ) );
+
+        my $prolog = '<?xml version="1.0" encoding="UTF-8"?>';
+        my $xml_str = $prolog.$act_xml->toString();
+print STDERR "form_orcid_affiliation_xml [".$xml_str."]\n";
+        return $xml_str;
+};
+
 
 
 

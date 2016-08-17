@@ -438,10 +438,7 @@ sub render_selected_details
 	$h3->appendChild( $self->html_phrase( "user_settings" ) );
         my $table = $div->appendChild( $repo->make_element( "table", class=>"ep_multi" ) );
         my $first = 1;
-	foreach my $field_name ( qw\ orcid_profile_rl_token orcid_bio_rl_token 
-				orcid_works_rl_token orcid_works_c_token orcid_bio_extern_ids_c_token 
-				orcid_affiliations_c_token orcid_funding_c_token orcid_bio_u_token orcid_works_u_token 
-				orcid_affiliations_u_token orcid_funding_u_token	\ )
+	foreach my $field_name ( qw\ orcid_rl_token orcid_act_u_token orcid_bio_u_token \ ) 
 	{
 		next unless $ds->has_field( $field_name );
 		my $field = $ds->field( $field_name );

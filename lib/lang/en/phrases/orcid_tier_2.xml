@@ -12,29 +12,13 @@
 <epp:phrase id="cgi/orcid/auth:error:invalid_code">The requested action was not authorised.</epp:phrase>
 
 
-<epp:phrase id="user_fieldname_orcid_profile_rl_token">Profile Read Token</epp:phrase>
-<epp:phrase id="user_fieldname_orcid_bio_rl_token">Bio Read Token</epp:phrase>
-<epp:phrase id="user_fieldname_orcid_works_rl_token">Works Read Token</epp:phrase>
-<epp:phrase id="user_fieldname_orcid_works_c_token">Works Create Token</epp:phrase>
-<epp:phrase id="user_fieldname_orcid_bio_extern_ids_c_token">External ID Create Token</epp:phrase>
-<epp:phrase id="user_fieldname_orcid_affiliations_c_token">Affiliation Create Token</epp:phrase>
-<epp:phrase id="user_fieldname_orcid_funding_c_token">Funding Create Token</epp:phrase>
+<epp:phrase id="user_fieldname_orcid_rl_token">Read Limited Token</epp:phrase>
+<epp:phrase id="user_fieldname_orcid_act_u_token">Activities Update Token</epp:phrase>
 <epp:phrase id="user_fieldname_orcid_bio_u_token">Bio Update Token</epp:phrase>
-<epp:phrase id="user_fieldname_orcid_works_u_token">Works Update Token</epp:phrase>
-<epp:phrase id="user_fieldname_orcid_affiliations_u_token">Affiliation Update Token</epp:phrase>
-<epp:phrase id="user_fieldname_orcid_funding_u_token">Funding Update Token</epp:phrase>
 
-<epp:phrase id="user_fieldhelp_orcid_profile_rl_token">Shows whether the user has granted permission for: Profile Read</epp:phrase>
-<epp:phrase id="user_fieldhelp_orcid_bio_rl_token">Shows whether the user has granted permission for: Bio Read</epp:phrase>
-<epp:phrase id="user_fieldhelp_orcid_works_rl_token">Shows whether the user has granted permission for: Works Read</epp:phrase>
-<epp:phrase id="user_fieldhelp_orcid_works_c_token">Shows whether the user has granted permission for: Works Create</epp:phrase>
-<epp:phrase id="user_fieldhelp_orcid_bio_extern_ids_c_token">Shows whether the user has granted permission for: External ID Create</epp:phrase>
-<epp:phrase id="user_fieldhelp_orcid_affiliations_c_token">Shows whether the user has granted permission for: Affiliation Create</epp:phrase>
-<epp:phrase id="user_fieldhelp_orcid_funding_c_token">Shows whether the user has granted permission for: Funding Create</epp:phrase>
-<epp:phrase id="user_fieldhelp_orcid_bio_u_token">Shows whether the user has granted permission for: Bio Update</epp:phrase>
-<epp:phrase id="user_fieldhelp_orcid_works_u_token">Shows whether the user has granted permission for: Works Update</epp:phrase>
-<epp:phrase id="user_fieldhelp_orcid_affiliations_u_token">Shows whether the user has granted permission for: Affiliation Update</epp:phrase>
-<epp:phrase id="user_fieldhelp_orcid_funding_u_token">Shows whether the user has granted permission for: Funding Update</epp:phrase>
+<epp:phrase id="user_fieldhelp_orcid_rl_token">Shows whether the user has granted permission for: Read public and limited visibility items on a record</epp:phrase>
+<epp:phrase id="user_fieldhelp_orcid_act_u_token">Shows whether the user has granted permission for: Add, update and delete research activities</epp:phrase>
+<epp:phrase id="user_fieldhelp_orcid_bio_u_token">Shows whether the user has granted permission for: Add update and delete personal information</epp:phrase>
 
 
 <epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:title">ORCID</epp:phrase>
