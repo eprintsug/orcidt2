@@ -18,7 +18,7 @@ $c->{orcid_search} =  'search/';
 # new user fields for ORCiD
 
 push @{$c->{fields}->{user}},
-{ name => 'orcid', type => 'text', },
+{ name => 'orcid', type => 'id', },
 ;
 
 
