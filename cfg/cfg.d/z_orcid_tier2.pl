@@ -240,8 +240,6 @@ $c->{get_orcid_authorise_url} = sub
 	my $machine = $target_map->{$host};
 	$machine = 3 unless $machine;
 
-	$machine = 3;
-
 	my $activity_map = $repo->config( "orcid_activity_map" );
 	my $activity_id = $activity_map->{$activity}->{activity_id};
 	my $state = $machine.$user_id."-".$activity_id.$item_id;

@@ -19,15 +19,17 @@ unless ( $code && length( $code ) == $CODE_LEN )
 	$repo->terminate;
         exit;
 }
+my $machine;
 my $user_id;
 my $item_id;
 my $action;
-if ( $state && $state =~ /u(\d+)i(\d+)a(\d+)/ )
+if ( $state && $state =~ /^(\d)(\d+)-(\d{2})(\d+)/ )
 {
-	$user_id = $1;
-	$item_id = $2;
-	$action = $3;
-print STDERR "####### orcid auth script got state user_id[$user_id] item_id[$item_id] action[$action]\n";
+	$machine = $1;
+	$user_id = $2;
+	$action  = $3;
+	$item_id = $4;
+print STDERR "####### orcid auth script got state machine[$machine] user_id[$user_id] item_id[$item_id] action[$action]\n";
 }
 else
 {
@@ -37,7 +39,17 @@ print STDERR "####### orcid auth script invalid state\n";
         exit;
 }
 
+my $target_map = $repo->config( "orcid_target_machines" );
+my $host = $repo->config( "host" );
+my $this_machine = $target_map->{$host};
 
+if ( $machine != $this_machine )
+{
+print STDERR "####### orcid auth script invalid machine\n";
+	show_error( $repo, 'invalid_machine' );
+	$repo->terminate;
+        exit;
+}
 
 print STDERR "\n\n####### about to exchange \n\n";
 # Exchange the Authorization Code for an Access Token with the Client ID and Secret.
