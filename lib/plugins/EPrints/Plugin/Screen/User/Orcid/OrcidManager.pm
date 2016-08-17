@@ -995,8 +995,8 @@ sub render_export_data
 			if (200 == $data->{code} )
 			{
 				my $result_xml = EPrints::XML::parse_xml_string( $data->{data} );
-				my $tag_data = ($result_xml->getElementsByTagName( "orcid-works" ))[0];
-				my @works = $tag_data->getElementsByTagName( "orcid-work" );
+				my $tag_data = ($result_xml->getElementsByTagName( "orcid-works" ))[0] if $result_xml;
+				my @works = $tag_data->getElementsByTagName( "orcid-work" ) if $tag_data;
 				foreach my $work ( @works )
 				{
 	
