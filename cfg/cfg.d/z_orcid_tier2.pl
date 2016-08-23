@@ -2,45 +2,25 @@
 # Settings for the Orcid Tier 2 api
 #
 
-# 
-# Enable/disable the Orcid plugins
-#
+#new permissions for ORCiD 
+$c->{roles}->{"orcid"} =
+[
+        "orcid/destroy",
+        "orcid/write",
+        "orcid/view",
+];
 
-$c->{plugins}->{"Import::Orcid"}->{params}->{disable} = 0;
-$c->{plugins}->{"InputForm::Component::Field::OrcidId"}->{params}->{disable} = 0;
-$c->{plugins}->{"Orcid::Add"}->{params}->{disable} = 0;
-$c->{plugins}->{"Orcid::AddWorks"}->{params}->{disable} = 0;
-$c->{plugins}->{"Orcid::Auth"}->{params}->{disable} = 0;
-$c->{plugins}->{"Orcid::ReadBio"}->{params}->{disable} = 0;
-$c->{plugins}->{"Orcid::Read"}->{params}->{disable} = 0;
-$c->{plugins}->{"Orcid::ReadProfile"}->{params}->{disable} = 0;
-$c->{plugins}->{"Orcid::ReadResearch"}->{params}->{disable} = 0;
-$c->{plugins}->{"Orcid"}->{params}->{disable} = 0;
-$c->{plugins}->{"Screen::Admin::Orcid::OrcidManager"}->{params}->{disable} = 0;
-$c->{plugins}->{"Screen::Import::Orcid"}->{params}->{disable} = 0;
-$c->{plugins}->{"Screen::User::Orcid::OrcidManager"}->{params}->{disable} = 0;
-
+push @{$c->{user_roles}->{admin}}, 'orcid';
 
 #
-# new user fields for persistent authorisation tokens obtained via OAuth.
+# new user fields for the id and persistent authorisation tokens obtained via OAuth.
 # see: http://members.orcid.org/api/orcid-scopes
 #
 push @{$c->{fields}->{user}},
+{ name => 'orcid', type => 'id', },
 { name => 'orcid_rl_token', type => 'text', },
 { name => 'orcid_act_u_token', type => 'text', },
 { name => 'orcid_bio_u_token', type => 'text', },
-
-#{ name => 'orcid_profile_rl_token', type => 'text', },
-#{ name => 'orcid_bio_rl_token', type => 'text', },
-#{ name => 'orcid_works_rl_token', type => 'text', },
-#{ name => 'orcid_works_c_token', type => 'text', },
-#{ name => 'orcid_bio_extern_ids_c_token', type => 'text', },
-#{ name => 'orcid_affiliations_c_token', type => 'text', },
-#{ name => 'orcid_funding_c_token', type => 'text', },
-#{ name => 'orcid_bio_u_token', type => 'text', },
-#{ name => 'orcid_works_u_token', type => 'text', },
-#{ name => 'orcid_affiliations_u_token', type => 'text', },
-#{ name => 'orcid_funding_u_token', type => 'text', },
 ;
 
 #
@@ -68,6 +48,7 @@ $c->{orcid_import_plugin_rank} = {
 $c->{orcid_version} =  '1.2';
 $c->{orcid_tier_2_server} =  'https://sandbox.orcid.org/';
 $c->{orcid_tier_2_api} =  'https://api.sandbox.orcid.org/';
+$c->{orcid_public_api} =  'https://pub.sandbox.orcid.org/';
 
 $c->{orcid_exchange_url} = $c->{orcid_tier_2_api} . 'oauth/token' ; 
 
@@ -84,6 +65,13 @@ $c->{orcid_activity_map} = {
 		desc		=> "Retrieve a user's authenticated ORCID iD to store in your system. Redirect to User orcid management screen",
 		token_type	=> "single",
 		},
+	user_login => {
+		scope 		=> "/authenticate",
+		activity_id	=> '03',
+		desc		=> "Retrieve a user's authenticated ORCID iD to allow login",
+		token_type	=> "single",
+		},
+
 	read_record => {
 		scope 		=> "/read-limited",
 		request		=> "orcid-profile",
@@ -212,6 +200,14 @@ $c->{orcid_work_type_map} = {
 #
 # ORCID Utilities
 #
+
+#$c->{get_orcid_query_url} = sub
+#{
+#        my( $repo, $user_id, $item_id, $activity, $orcid_id ) = @_;
+#	my $url =  $repo->config( "orcid_tier_2_server" ) . 'v' .$repo->config( "orcid_version" ).'/'; 
+#
+#
+#};
 
 $c->{get_orcid_authorise_url} = sub
 {
@@ -451,6 +447,25 @@ print STDERR "form_orcid_affiliation_xml [".$xml_str."]\n";
         return $xml_str;
 };
 
+
+
+# 
+# Enable/disable the Orcid plugins
+#
+
+$c->{plugins}->{"Import::Orcid"}->{params}->{disable} = 0;
+$c->{plugins}->{"InputForm::Component::Field::OrcidId"}->{params}->{disable} = 0;
+$c->{plugins}->{"Orcid::Add"}->{params}->{disable} = 0;
+$c->{plugins}->{"Orcid::AddWorks"}->{params}->{disable} = 0;
+$c->{plugins}->{"Orcid::Auth"}->{params}->{disable} = 0;
+$c->{plugins}->{"Orcid::ReadBio"}->{params}->{disable} = 0;
+$c->{plugins}->{"Orcid::Read"}->{params}->{disable} = 0;
+$c->{plugins}->{"Orcid::ReadProfile"}->{params}->{disable} = 0;
+$c->{plugins}->{"Orcid::ReadResearch"}->{params}->{disable} = 0;
+$c->{plugins}->{"Orcid"}->{params}->{disable} = 0;
+$c->{plugins}->{"Screen::Admin::Orcid::OrcidManager"}->{params}->{disable} = 0;
+$c->{plugins}->{"Screen::Import::Orcid"}->{params}->{disable} = 0;
+$c->{plugins}->{"Screen::User::Orcid::OrcidManager"}->{params}->{disable} = 0;
 
 
 

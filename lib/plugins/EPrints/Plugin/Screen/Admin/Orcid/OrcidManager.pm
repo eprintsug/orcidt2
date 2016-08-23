@@ -1,6 +1,9 @@
 =head1 NAME
 
-EPrints::Plugin::Screen::Admin::Validation::OrcidManager
+EPrints::Plugin::Screen::Admin::orcid::OrcidManager
+
+demonstrate using the public api to retrieve works data
+
 =cut
 
 package EPrints::Plugin::Screen::Admin::Orcid::OrcidManager;
@@ -176,7 +179,7 @@ sub render_selected_details
 
         my $table = $repo->make_element( "table", class=>"ep_multi" );
         my $first = 1;
-	foreach my $field_name ( qw\ name orcid orcid_import orcid_export  \ )
+	foreach my $field_name ( qw\ name orcid \ )
 	{
 		my $field = $ds->field( $field_name );
 		next unless $user->is_set( $field->get_name );
@@ -214,11 +217,12 @@ sub render_orcid_data
 
 	my $div = $frag->appendChild( $xml->create_element( "div", class => "orcid_items" ) );
 
-	#my $url = $repo->get_conf( "orcid_public_sandbox_api" );
 	my $url = $repo->get_conf( "orcid_public_api" );
-	$url .= $orcid;
-	$url .= $repo->get_conf( "orcid_works" ); 
+	my $url_v = $repo->get_conf( "orcid_version" );
+	$url .= "v".$url_v."/".$orcid;
+	$url .= "/orcid-works"; 
 
+print STDERR "req[".$url."]\n";
 	my $req = HTTP::Request->new("GET",$url);
 	$req->header( "accept" => "application/json" );
 
@@ -231,6 +235,7 @@ sub render_orcid_data
 	}
 	else
 	{
+print STDERR "got[".Data::Dumper::Dumper($response)."]\n";
 		my $content = $response->content;
 		my $json_vars = JSON::decode_json($content);
 		$div->appendChild( $self->render_orcid_works( $json_vars ) );

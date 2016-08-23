@@ -54,24 +54,22 @@ print STDERR "Orcid::Auth::perform_action called scope,[$scope,] orcid,[$orcid,]
 	my $orcid_field = $repo->config( "user_orcid_id_field" );
 	my $ds = $repo->dataset( "user" );
 	my $user = $ds->dataobj( $user_id );
-	if ( $user )
-	{
-		$user->set_value( $orcid_field, $orcid );
-		$user->commit();
-	}
-	else
+	unless ( $user )
 	{
 		$repo->render_message( 'error', $repo->html_phrase( "cgi/orcid/auth:error:user_update_failed" ) );
-print STDERR "####### updated user ERROR redirect to [".$repo->config( 'userhome' )."]\n";
 	}
 
 	my $return_url = $repo->config( 'userhome' );
 	if ( $action eq "01" )
 	{
+		$user->set_value( $orcid_field, $orcid );
+		$user->commit();
 		$return_url .= "?screen=Workflow::Edit&dataset=user&dataobj=".$user_id."&stage=default";
 	}
 	elsif ( $action eq "02" )
 	{
+		$user->set_value( $orcid_field, $orcid );
+		$user->commit();
 		$return_url .= "?screen=User::Orcid::OrcidManager";
 
                 # for this action we can set the affiliation
@@ -95,7 +93,6 @@ print STDERR "####### updated user ERROR redirect to [".$repo->config( 'userhome
                 my $ua = LWP::UserAgent->new;
                 my $response = $ua->request($req);
 
-print STDERR "\n\n\n\n####### add activity affiliation got response [".Data::Dumper::Dumper($response)."]\n\n";
                 if ( $response->code > 299 )
                 {
 
@@ -108,10 +105,19 @@ print STDERR "\n\n\n\n####### add activity affiliation got response [".Data::Dum
                 }
 
 	}
+	elsif ( $action eq "03" )
+	{
+		EPrints::DataObj::LoginTicket->expire_all( $repo );
+		$repo->dataset( "loginticket" )->create_dataobj({
+        		userid => $user_id,
+		})->set_cookies();
+
+		$return_url = $repo->config( 'userhome' );
+	}
+
 	$repo->redirect( $return_url );
 	return 1;
 }
-
 
 1;
 
