@@ -698,6 +698,7 @@ sub render_orcid_works
 	my $xml = $repo->xml;
 
         my $div = $xml->create_element( "div" );
+	return $div unless $data;
 
        	my $table = $div->appendChild( $xml->create_element( "table", class=>"ep_upload_fields ep_multi" ) );
 	my $import_count = 0;

@@ -107,12 +107,24 @@ print STDERR "Orcid::Auth::perform_action called scope,[$scope,] orcid,[$orcid,]
 	}
 	elsif ( $action eq "03" )
 	{
-		EPrints::DataObj::LoginTicket->expire_all( $repo );
-		$repo->dataset( "loginticket" )->create_dataobj({
-        		userid => $user_id,
-		})->set_cookies();
+		my $user_orcid = $user->get_value( $orcid_field );
+		my $login_allowed = $user->get_value( "allow_orcid_login" );
+print STDERR "Orcid::Auth::perform_action 3 orcid[$orcid] userorcid[$user_orcid] allowed[$login_allowed]\n";
+	
+		if ( $user_orcid && $orcid && $user_orcid eq $orcid && $login_allowed eq "TRUE" )
+		{
+			EPrints::DataObj::LoginTicket->expire_all( $repo );
+			$repo->dataset( "loginticket" )->create_dataobj({
+        			userid => $user_id,
+			})->set_cookies();
 
-		$return_url = $repo->config( 'userhome' );
+			$return_url = $repo->config( 'userhome' );
+		}
+		else
+		{
+			$repo->render_message( 'message', $repo->html_phrase( "Plugin/Screen/Login/OrcidLogin:not_allowed", 
+								orcid=>$repo->xml->create_text_node($orcid) ) );
+		}
 	}
 
 	$repo->redirect( $return_url );
