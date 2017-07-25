@@ -1,5 +1,5 @@
 #
-# Settings for the Orcid Tier 2 api
+# Settings for the Orcid Member api
 #
 
 #new permissions for ORCiD 
@@ -21,7 +21,42 @@ push @{$c->{fields}->{user}},
 { name => 'orcid_rl_token', type => 'text', },
 { name => 'orcid_act_u_token', type => 'text', },
 { name => 'orcid_bio_u_token', type => 'text', },
-;
+{	name => 'put_codes',
+  	type => 'compound', 
+  	multiple => 1,
+	volatile => 1,
+	sql_index => 0,
+	text_index => 0,
+	can_clone => 0,
+	show_in_fieldlist => 0,
+	export_as_xml => 0,
+	import => 0,
+    	fields => [ 
+		{
+			sub_name => 'code_type',
+			type => 'set',
+			options => [qw(
+				group_id
+				address
+				education
+				employment
+				ext_id
+				funding
+				keyword
+				other_name
+				peer_review
+				researcher_url
+				work
+			)],
+		},
+		{
+			sub_name => 'code', type => 'int',
+		},
+		{
+			sub_name => 'item', type => 'int',
+		},
+	],
+};
 
 #
 # repository field mapping
@@ -45,12 +80,42 @@ $c->{orcid_import_plugin_rank} = {
 # ORCID Config and utilities
 #
 
-$c->{orcid_version} =  '1.2';
-$c->{orcid_tier_2_server} =  'https://sandbox.orcid.org/';
-$c->{orcid_tier_2_api} =  'https://api.sandbox.orcid.org/';
+$c->{orcid_version} =  '2.0';
+$c->{orcid_member_server} =  'https://sandbox.orcid.org/';
+$c->{orcid_member_api} =  'https://api.sandbox.orcid.org/';
 $c->{orcid_public_api} =  'https://pub.sandbox.orcid.org/';
 
-$c->{orcid_exchange_url} = $c->{orcid_tier_2_api} . 'oauth/token' ; 
+$c->{orcid_exchange_url} = $c->{orcid_member_api} . 'oauth/token' ; 
+
+$c->{orcid_scope_map} = {
+	"/read-limited" 	=> "orcid_rl_token", 
+	"/activities/update" 	=> "orcid_act_u_token",
+	"/person/update" 	=> "orcid_bio_u_token",
+};
+	
+$c->{orcid_read_scope} = "/read-limited";
+
+$c->{orcid_endpoint_map} = {
+	"address"	=>	"/person/update",
+	"education"	=>	"/activities/update",
+	"employment"	=>	"/activities/update",
+	"external-identifiers"	=>	"/person/update",
+	"funding"	=>	"/activities/update",
+	"keywords"	=>	"/person/update",
+	"other-names"	=>	"/person/update",
+	"peer-review"	=>	"/activities/update",
+	"researcher-urls"	=>	"/person/update",
+	"work"		=>	"/activities/update",
+	"works"		=>	"/activities/update",
+};
+
+$c->{put_code_tag_for_endpoint} = {
+	"/activities"   => "activities-summary",
+        "/employments"  => "employment-summary",
+        "/educations"   => "education-summary",
+        "/works"        => "work-summary",
+};
+
 
 $c->{orcid_activity_map} = {
 	authenticate => {
@@ -105,7 +170,7 @@ $c->{orcid_activity_map} = {
 		token		=> "orcid_act_u_token",
 		},
 	add_identifier => {
-		scope 		=> "/orcid-bio/update",
+		scope 		=> "/person/update",
 		request		=> "/orcid-bio/external-identifiers",
 		activity_id	=> '01',
 		desc		=> "Create a link between the user's account on your system and their ORCID iD",
@@ -201,44 +266,27 @@ $c->{orcid_work_type_map} = {
 # ORCID Utilities
 #
 
-#$c->{get_orcid_query_url} = sub
-#{
-#        my( $repo, $user_id, $item_id, $activity, $orcid_id ) = @_;
-#	my $url =  $repo->config( "orcid_tier_2_server" ) . 'v' .$repo->config( "orcid_version" ).'/'; 
-#
-#
-#};
+$c->{get_orcid_query_url} = sub
+{
+        my( $repo, $user_id, $item_id, $activity, $orcid_id ) = @_;
+	my $url =  $repo->config( "orcid_member_server" ) . 'v' .$repo->config( "orcid_version" ).'/'; 
+
+
+};
 
 $c->{get_orcid_authorise_url} = sub
 {
-        my( $repo, $user_id, $item_id, $activity, $orcid_id ) = @_;
+        my( $repo, $user_id, $item_id, $scope, $activity, $orcid_id ) = @_;
 
-	my $target_map = $repo->config( "orcid_target_machines" );
-	my $host = $repo->config( "host" );
-	my $machine = $target_map->{$host};
-	$machine = 3 unless $machine;
-
-	my $activity_map = $repo->config( "orcid_activity_map" );
-	my $activity_id = $activity_map->{$activity}->{activity_id};
-	my $state = $machine.$user_id."-".$activity_id.$item_id;
+	$activity = '01' unless $activity;
+	my $machine = 1;
+	my $state = $machine.$user_id."-".$activity.$item_id;
 	my $login_screen = "";
 	$login_screen = "&show_login=true&orcid=$orcid_id" if $orcid_id;
 
-	my $orcid_profile_scope = "/read-limited";
-	if ( $activity )
-	{
-                if ( $activity eq "user_authenticate" )
-                {
-                        $orcid_profile_scope = "/authenticate /read-limited /activities/update /orcid-bio/update"; 
-                }
-                else
-                {
-                        $orcid_profile_scope = $activity_map->{$activity}->{scope};
-                }
-	}
-	my $orcid_authorise_url =  $repo->config( "orcid_tier_2_server" ) . 'oauth/authorize?' . 
+	my $orcid_authorise_url =  $repo->config( "orcid_member_server" ) . 'oauth/authorize?' . 
 				'client_id=' . $repo->config( "orcid_client_id" ) .
-				'&scope=' . $orcid_profile_scope .
+				'&scope=' . $scope .
 				'&response_type=code' . 
 				'&redirect_uri=' . $repo->config( "orcid_redirect_uri" ). 
 				$login_screen.
@@ -247,20 +295,13 @@ $c->{get_orcid_authorise_url} = sub
 	return $orcid_authorise_url;
 };
 
-$c->{get_orcid_revoke_url} = sub
-{
-        my( $repo ) = @_;
-
-	my $orcid_revoke_url =  $repo->config( "orcid_tier_2_server" ) . 'account?activeTab=application-tab';
-	return $orcid_revoke_url;
-};
-
 
 
 $c->{form_orcid_work_xml} = sub
 {
         my( $repo, $item_id, ) = @_;
 
+print STDERR "form_orcid_work_xml called\n";
 	my $xml = $repo->xml;
 	my $work_xml = $xml->create_element( "orcid-message", 
     		'xmlns' => "http://www.orcid.org/ns/orcid",
@@ -281,22 +322,38 @@ $c->{form_orcid_work_xml} = sub
 	my $titles = $item->get_value( "title" );
 	if ( $titles )
 	{
+print STDERR "form_orcid_work_xml [". ref($titles)."] [".$titles."]\n";
 		my $w_title = $work->appendChild( $xml->create_element( "work-title" ) );
 		my $title = $w_title->appendChild( $xml->create_element( "title" ) );
-		$title->appendChild( $xml->create_text_node( $titles->[0]->{text} ) );
-		if ( scalar @$titles > 1 )
+		if ( ref($titles) eq 'ARRAY' )
 		{
-			foreach my $trans_title ( @$titles )
+			$title->appendChild( $xml->create_text_node( $titles->[0]->{text} ) );
+			if ( scalar @$titles > 1 )
 			{
-				my $t_title = $w_title->appendChild( $xml->create_element( "translated-title", 'language-code'=>$trans_title->{lang} ) );
-				$t_title->appendChild( $xml->create_text_node( $trans_title->{text} ) );
+				foreach my $trans_title ( @$titles )
+				{
+					my $t_title = $w_title->appendChild( $xml->create_element( "translated-title", 'language-code'=>$trans_title->{lang} ) );
+					$t_title->appendChild( $xml->create_text_node( $trans_title->{text} ) );
+				}
 			}
 		}
+		else
+		{
+			$title->appendChild( $xml->create_text_node( $titles ) );
+		}
 	}
-	if ( $item->get_value( "abstract" ) )
+	my $abstracts =  $item->get_value( "abstract" );
+	if ( $abstracts )
 	{
 		my $w_abs = $work->appendChild( $xml->create_element( "short-description" ) );
-		$w_abs->appendChild( $xml->create_text_node( @{$item->get_value( "abstract" )}[0]->{text} ) );
+		if ( ref($abstracts) eq 'ARRAY' )
+		{	
+			$w_abs->appendChild( $xml->create_text_node( $abstracts->[0]->{text} ) );
+		}
+		else
+		{
+			$w_abs->appendChild( $xml->create_text_node( $abstracts ) );
+		}
 	}
 
 	my $work_map = $repo->config( "orcid_work_type_map" );
@@ -400,45 +457,52 @@ print STDERR "form_orcid_work_xml [".$xml_str."]\n";
 
 $c->{form_orcid_affiliation_xml} = sub
 {
-        my( $repo, $user, ) = @_;
+        my( $repo, $user, $put_code ) = @_;
 
         my $xml = $repo->xml;
-        my $act_xml = $xml->create_element( "orcid-message",
-                'xmlns' => "http://www.orcid.org/ns/orcid",
-                'xmlns:xsi' => "http://www.w3.org/2001/XMLSchema-instance",
-                'xsi:schemaLocation' => "https://raw.github.com/ORCID/ORCID-Source/master/orcid-model/src/main/resources/orcid-message-1.2.xsd",
+	my $act_xml;
+        $act_xml = $xml->create_element( "employment:employment",
+		'xmlns:employment' => "http://www.orcid.org/ns/employment",
+		'xmlns:common' => "http://www.orcid.org/ns/common",
+		'xmlns:xsi' => "http://www.w3.org/2001/XMLSchema-instance",
+		'xsi:schemaLocation' => "http://www.orcid.org/ns/employment ../employment-2.0.xsd", 
         );
 
         return $act_xml unless $user;
 
-        my $version = $act_xml->appendChild( $xml->create_element( "message-version" ) );
-        $version->appendChild( $xml->create_text_node( $repo->config( "orcid_version" ) ) );
-        my $profile = $act_xml->appendChild( $xml->create_element( "orcid-profile" ) );
-        my $activities = $profile->appendChild( $xml->create_element( "orcid-activities" ) );
-        my $affiliations = $activities->appendChild( $xml->create_element( "affiliations" ) );
-        my $affiliation = $affiliations->appendChild( $xml->create_element( "affiliation", visibility=>"public" ) );
-        my $type = $affiliation->appendChild( $xml->create_element( "type" ) );
-        $type->appendChild( $xml->create_text_node( "employment" ) );
-        #my $dept = $affiliation->appendChild( $xml->create_element( "department-name" ) );
-        #$dept->appendChild( $xml->create_text_node( "Department" ) );
-        #my $role = $affiliation->appendChild( $xml->create_element( "role-title" ) );
-        #$role->appendChild( $xml->create_text_node( "Role title" ) );
-        #my $start = $affiliation->appendChild( $xml->create_element( "start-date" ) );
-        #my $end = $affiliation->appendChild( $xml->create_element( "end-date" ) );
-        my $organisation = $affiliation->appendChild( $xml->create_element( "organization" ) );
-        my $org_name = $organisation->appendChild( $xml->create_element( "name" ) );
+	if ( $put_code )
+	{
+	        $act_xml = $xml->create_element( "employment:employment" ); 
+		$act_xml->setAttribute( "xmlns:employment", "http://www.orcid.org/ns/employment" );
+		$act_xml->setAttribute( "xmlns:common", "http://www.orcid.org/ns/common" );
+		$act_xml->setAttribute( "xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance" );
+		$act_xml->setAttribute( "xsi:schemaLocation", "http://www.orcid.org/ns/employment ../employment-2.0.xsd" );
+		$act_xml->setAttribute( "put-code", $put_code );
+	}
+        my $dept = $act_xml->appendChild( $xml->create_element( "employment:department-name" ) );
+if ( $put_code ) {
+        $dept->appendChild( $xml->create_text_node( "MODIFIED Department" ) );
+}else{
+        $dept->appendChild( $xml->create_text_node( "Department" ) );
+}
+        my $role = $act_xml->appendChild( $xml->create_element( "employment:role-title" ) );
+        $role->appendChild( $xml->create_text_node( "Role title" ) );
+        #my $start = $act_xml->appendChild( $xml->create_element( "common:start-date" ) );
+        #my $end = $act_xml->appendChild( $xml->create_element( "common:end-date" ) );
+        my $organisation = $act_xml->appendChild( $xml->create_element( "employment:organization" ) );
+        my $org_name = $organisation->appendChild( $xml->create_element( "common:name" ) );
         $org_name->appendChild( $xml->create_text_node( $repo->config( "org_ringgold_name" ) ) );
-        my $org_addr = $organisation->appendChild( $xml->create_element( "address" ) );
-        my $city = $org_addr->appendChild( $xml->create_element( "city" ) );
+        my $org_addr = $organisation->appendChild( $xml->create_element( "common:address" ) );
+        my $city = $org_addr->appendChild( $xml->create_element( "common:city" ) );
         $city->appendChild( $xml->create_text_node( $repo->config( "org_ringgold_city" ) ) );
-        my $region = $org_addr->appendChild( $xml->create_element( "region" ) );
+        my $region = $org_addr->appendChild( $xml->create_element( "common:region" ) );
         $region->appendChild( $xml->create_text_node( $repo->config( "org_ringgold_region" ) ) );
-        my $country = $org_addr->appendChild( $xml->create_element( "country" ) );
+        my $country = $org_addr->appendChild( $xml->create_element( "common:country" ) );
         $country->appendChild( $xml->create_text_node( $repo->config( "org_ringgold_country" ) ) );
-        my $dissamb_org = $organisation->appendChild( $xml->create_element( "disambiguated-organization" ) );
-        my $dissamb_org_id = $dissamb_org->appendChild( $xml->create_element( "disambiguated-organization-identifier" ) );
+        my $dissamb_org = $organisation->appendChild( $xml->create_element( "common:disambiguated-organization" ) );
+        my $dissamb_org_id = $dissamb_org->appendChild( $xml->create_element( "common:disambiguated-organization-identifier" ) );
         $dissamb_org_id->appendChild( $xml->create_text_node( $repo->config( "org_ringgold_id" ) ) );
-        my $dissamb_org_src = $dissamb_org->appendChild( $xml->create_element( "disambiguation-source" ) );
+        my $dissamb_org_src = $dissamb_org->appendChild( $xml->create_element( "common:disambiguation-source" ) );
         $dissamb_org_src->appendChild( $xml->create_text_node( "RINGGOLD" ) );
 
         my $prolog = '<?xml version="1.0" encoding="UTF-8"?>';
@@ -447,7 +511,30 @@ print STDERR "form_orcid_affiliation_xml [".$xml_str."]\n";
         return $xml_str;
 };
 
+$c->{valid_orcid_id} = sub
+{
+        my( $orcid_id, ) = @_;
 
+	return $orcid_id && $orcid_id =~ /\d{4}-\d{4}-\d{4}-\d{3}[Xx\d]/
+};
+	
+$c->{render_orcid_id} = sub
+{
+        my( $repo, $orcid_id ) = @_;
+
+	my $frag = $repo->make_doc_fragment;
+	return $frag unless $repo->call( "valid_orcid_id", $orcid_id );
+
+	my $xml = $repo->xml;
+	my $orcid_link = $frag->appendChild( $xml->create_element( "a", href=>"http://orcid.org" ) );
+	$orcid_link->appendChild( $xml->create_element( "img", alt => "ORCID logo", 
+					src => "/style/images/orcid_16x16.png", 
+					id => "orcid-id-logo-16" ) );
+	my $orcid_id_link = $frag->appendChild( $xml->create_element( "a", href=>"http://orcid.org/".$orcid_id ) );
+	$orcid_id_link->appendChild( $xml->create_text_node( "http://orcid.org/".$orcid_id ) );
+
+	return $frag;
+};
 
 # 
 # Enable/disable the Orcid plugins

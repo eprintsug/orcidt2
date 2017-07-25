@@ -2,6 +2,9 @@
 
 EPrints::Plugin::Orcid
 
+This is the base class for the ORCID plugins. The sub classes define the action/scope
+that they are responsible for and implement the appropriate perform_action routine.
+
 =cut
 
 package EPrints::Plugin::Orcid;
@@ -27,14 +30,16 @@ sub new
 	return $self;
 }
 
+########################################################################################
+# This is part of the Plugin framework and allows specific ORCID plugins to be found
+# based upon the scope. 
+########################################################################################
 sub matches 
 {
 	my( $self, $test, $param ) = @_;
 
-print STDERR "matches testing  test[".$test."] param[$param]\n";
 	if( $test eq "scope" )
 	{
-print STDERR "##################testing scope returning [".$self->{scope} eq $param."]\n";
 		return( $self->{scope} eq $param );
 	}
 
@@ -43,6 +48,9 @@ print STDERR "##################testing scope returning [".$self->{scope} eq $pa
 }
 
 
+########################################################################################
+## This routine should be overridden in the subclass
+########################################################################################
 sub perform_action
 {
 	my( $self, $scope, $orcid, $token, $action ) = @_;
@@ -50,16 +58,19 @@ sub perform_action
 	return $orcid ;
 }
 
-sub store_token_for_action
+########################################################################################
+# This is a utility routine to store the users token for a specifed scope
+########################################################################################
+sub store_token_for_scope
 {
-	my( $self, $orcid_action, $scope, $orcid, $token, $action, $user_id, $item_id ) = @_;
+	my( $self, $scope, $orcid, $token, $user_id ) = @_;
 
 	my $repo = $self->{repository};
 
-print STDERR "Orcid:store_token_for_action called orcid_action,[$orcid_action] scope,[$scope,] orcid,[$orcid,] token,[$token,] action[$action] user[$user_id] item[$item_id]\n";
-	#we now have the token for the user so we can update the user and return to the management screen
-	my $activity_map = $repo->config( "orcid_activity_map" );
-	my $field = $activity_map->{$orcid_action}->{token}; 
+	#we now have the token for the user so we can update the user 
+	my $scope_map = $repo->config( "orcid_scope_map" );
+	return unless $scope_map->{$scope};
+	my $field = $scope_map->{$scope}; 
 
 	my $ds = $repo->dataset( "user" );
 	my $user = $ds->dataobj( $user_id );
@@ -67,7 +78,7 @@ print STDERR "Orcid:store_token_for_action called orcid_action,[$orcid_action] s
 	{
 		$user->set_value( $field, $token );
 		$user->commit();
-print STDERR "####### Orcid:store_token_for_action updated user field [$field] with token[$token] redirect \n";
+print STDERR "####### Orcid:store_token_for_action updated user field [$field] with token[$token] \n";
 	}
 	else
 	{
@@ -77,39 +88,41 @@ print STDERR "####### updated user ERROR redirect to [".$repo->config( 'userhome
 	return;
 }
 
-
-
+########################################################################################
+# This utility routine will return undef or a token for the action that the plugin is
+# designed to handle. There is no default action defined for this class but sub classes
+# that implement specific ORCID Plugins will define an action/scope that they are 
+# responsible for 
+########################################################################################
 sub user_permission_granted
 {
 	my( $self, $user, ) = @_;
 
 	my $repo = $self->{repository};
-	return undef unless $self->{action} && $user;
-	my $activity_map = $repo->config( "orcid_activity_map" );
-	my $token_type = $activity_map->{$self->{action}}->{token_type};
-	return undef unless $token_type;
-	if ( $token_type eq "until_revoked" )
-	{
-		my $token_name = $activity_map->{$self->{action}}->{token};
-		return $user->get_value( $token_name );
-	}
-
-	return undef;
+	return undef unless $self->{scope} && $user;
+	my $scope_map = $repo->config( "orcid_scope_map" );
+	my $field = $scope_map->{$self->{scope}};
+	return undef unless $field;
+	return $user->get_value( $field );
 }
 
+########################################################################################
+# This is a generic routine to read data from the ORCID Registry
+# The action for which data is to be read is defined in the sub class
+########################################################################################
 sub read_data
 {
-	my( $self, $user, $orcid ) = @_;
+	#my( $self, $user, $orcid, $scope, $put_code, $end_point,  ) = @_;
+	my( $self, $user, $orcid, $scope, ) = @_;
 
 	return undef unless $user;
 	my $repo = $self->{repository};
 	my $activity_map = $repo->config( "orcid_activity_map" );
-	my $field = $activity_map->{$self->{action}}->{token}; 
+	my $scope_map = $repo->config( "orcid_scope_map" );
+	my $field = $scope_map->{$self->{scope}}; 
 	my $token = $user->get_value( $field );
 
-# curl -H 'Content-Type: application/vdn.orcid+xml' -H 'Authorization: Bearer d0127437-7a09-4c37-be2e-a437381644ac' -X GET 'https://api.sandbox.orcid.org/v1.1/0000-0002-0244-9026/orcid-profile' -L -i
-
-	my $url =  $repo->config( "orcid_tier_2_api" ) . 
+	my $url =  $repo->config( "orcid_member_api" ) . 
 		'v'. $repo->config( "orcid_version" ) .
 		'/'. $orcid. 
 		'/'. $activity_map->{$self->{action}}->{request} ; 
@@ -138,7 +151,95 @@ sub read_data
 	return $result ;
 }
 
+############################################################################
+## This routine checks the user data for an appropriate put code.
+## if one is found then the orcid record is queried to request the 
+## summary data for the supplied endpoint and 
+## returns true if the user's put code for the endpoint matches a put code 
+## for one of the possible elements in the orcid summary data
+############################################################################
+sub get_valid_put_code
+{
+	my( $self, $user, $orcid, $code_type, $end_point ) = @_;
 
+	return unless $user && $orcid && $end_point && $code_type;
+	my $repo = $self->{repository};
+
+	# check for an existing put code so we can prevent duplicate entries
+	my $codes = EPrints::Utils::clone( $user->get_value( "put_codes" ) );
+	my $put_code;
+	foreach my $code ( @$codes )
+	{
+		if ( $code->{code} && $code->{code_type} eq $code_type )
+		{
+print STDERR "get_valid_put_code test [".$code->{code}."] [".$code->{code_type}."] against [".$code_type."]\n";
+			$put_code = $code->{code};
+			last;
+		}
+	}
+	
+	return unless $put_code;
+
+	my $scope = $repo->config( "orcid_read_scope" );
+	my $scope_map = $repo->config( "orcid_scope_map" );
+	my $field = $scope_map->{$scope}; 
+	my $token = $user->get_value( $field );
+
+	my $tag_map = $repo->config( "put_code_tag_for_endpoint" );
+	my $tag = $tag_map->{$end_point};
+
+	my $url =  $repo->config( "orcid_member_api" ) . 
+		'v'. $repo->config( "orcid_version" ) .
+		'/'. $orcid.$end_point  ; 
+
+	my $ua = LWP::UserAgent->new;
+	my $request = new HTTP::Request( GET => $url,
+			HTTP::Headers->new(
+				'Content-Type' => 'application/vdn.orcid+xml', 
+				'Authorization' => 'Bearer '.$token )
+		);
+
+	my $response = $ua->request($request);
+
+	if ( 200 == $response->code )
+	{
+		my $result_xml = EPrints::XML::parse_xml_string( $response->content );
+		#foreach my $employment ( $result_xml->getElementsByTagName( "employment-summary" ) )
+		foreach my $element ( $result_xml->getElementsByTagName( $tag ) )
+		{
+			my $this_put_code = $element->getAttribute("put-code");
+print STDERR "\n\n\nget_valid_put_code GOT put-code[".$this_put_code."] return [".($this_put_code && $this_put_code eq $put_code)."]\n";
+			return $put_code if $this_put_code && $this_put_code eq $put_code;
+		}
+	}
+
+print STDERR "\n\n\n get_valid_put_code RETURN FALSE\n";
+	return;
+}
+
+
+############################################################################
+## This routine replaces any existing put code for a particular 
+## put_code_type with the supplied new code
+## There should be only one put code for a put code type and this routine
+## will remove any duplicates for the put code type being processed 
+############################################################################
+sub save_put_code
+{
+	my ( $self, $user, $code_type, $new_code ) = @_;
+	return unless $new_code && $code_type;
+	my $repo = $self->{repository};
+	my $new_codes = [];
+	my $old_codes = $user->get_value( "put_codes" );
+	foreach my $code ( @$old_codes )
+	{
+		push @$new_codes, $code unless $code->{"code_type"} eq $code_type;
+	}
+	my $put_code = { code => $new_code, code_type => $code_type };
+	push @$new_codes, $put_code;
+	$user->set_value( "put_codes", $new_codes );
+	$user->commit();
+}
 
 
 1;

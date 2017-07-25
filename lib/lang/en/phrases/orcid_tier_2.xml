@@ -2,6 +2,7 @@
 <!DOCTYPE phrases SYSTEM "entities.dtd">
 <epp:phrases xmlns="http://www.w3.org/1999/xhtml" xmlns:epp="http://eprints.org/ep3/phrase" xmlns:epc="http://eprints.org/ep3/control">
 
+
 <epp:phrase id="Plugin/Screen/Import/Orcid:no_user_orcid_field">You need to configure your user dataset ORCID iD field</epp:phrase>
 <epp:phrase id="Plugin/Screen/Import/Orcid:no_user_orcid">It has not been possible to find the ORCID iD associated with this user account</epp:phrase>
 
@@ -14,11 +15,10 @@
 
 <epp:phrase id="user_fieldname_orcid_rl_token">Read Limited Token</epp:phrase>
 <epp:phrase id="user_fieldname_orcid_act_u_token">Activities Update Token</epp:phrase>
-<epp:phrase id="user_fieldname_orcid_bio_u_token">Bio Update Token</epp:phrase>
-
-<epp:phrase id="user_fieldhelp_orcid_rl_token">Shows whether the user has granted permission for: Read public and limited visibility items on a record</epp:phrase>
-<epp:phrase id="user_fieldhelp_orcid_act_u_token">Shows whether the user has granted permission for: Add, update and delete research activities</epp:phrase>
-<epp:phrase id="user_fieldhelp_orcid_bio_u_token">Shows whether the user has granted permission for: Add update and delete personal information</epp:phrase>
+<epp:phrase id="user_fieldname_orcid_bio_u_token">Person Update Token</epp:phrase>
+<epp:phrase id="user_fieldhelp_orcid_rl_token">Shows whether the user has granted permission for: Read public and limited visibility items on an ORCID record</epp:phrase>
+<epp:phrase id="user_fieldhelp_orcid_act_u_token">Shows whether the user has granted permission for: Add, update and delete items in the education, employment, funding, works and peer-review sections of an ORCID record.</epp:phrase>
+<epp:phrase id="user_fieldhelp_orcid_bio_u_token">Shows whether the user has granted permission for: Add update and delete items in the other-names, keywords, countries, researcher-urls, websites, and personal external identifiers sections of the record.</epp:phrase>
 
 
 <epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:title">ORCID</epp:phrase>
@@ -33,15 +33,16 @@
 <epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:export">Export</epp:phrase>
 <epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:notification">Notifications</epp:phrase>
 <epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:permission_not_granted">Premission has not been granted for this action. Use the Read button to perform this action</epp:phrase>
+<epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:token_status"><h3><epc:pin name="label"/></h3><br/><epc:pin name="desc"/><br/>Status: <EM><epc:pin name="status" /></EM><br/>Action: <epc:pin name="action" /><br/></epp:phrase>
+<epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:no_action">No actions available</epp:phrase>
 <epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:granted">Granted</epp:phrase>
 <epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:revoked">Revoked</epp:phrase>
-<epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:account_settings"><br/><p>Once permission has been granted, you may revoke the access at any time by logging into your ORCID account, going to the <a href="{$config{orcid_tier_2_server}}account" target="_blank">Account Settings</a> page, and clicking the trash can icon next to the item you wish to revoke.</p></epp:phrase>
+<epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:account_settings"><br/><p>Once permission has been granted, you may revoke the access at any time by logging into your ORCID account, going to the <a href="{$config{orcid_member_server}}signin" target="_blank">Account Settings</a> page, and clicking the trash can icon next to the item you wish to revoke.</p></epp:phrase>
 
 <epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:action:revoke:title">Revoke Permission</epp:phrase>
-<epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:action:read_profile:title">Grant Read Profile Permission</epp:phrase>
-<epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:action:read_bio:title">Grant Read Bio Permission</epp:phrase>
-<epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:action:read_works:title">Grant Read Works Permission</epp:phrase>
-<epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:action:create_works:title">Grant Create Works Permission</epp:phrase>
+<epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:action:read_record:title">Grant Read ORCID Record Permission</epp:phrase>
+<epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:action:update_activities:title">Grant Update Activities Permission</epp:phrase>
+<epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:action:update_profile:title">Grant Update Profile Permission</epp:phrase>
 <epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:action:import_work:title">Import</epp:phrase>
 <epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:action:export_work:title">Export</epp:phrase>
 
@@ -58,5 +59,15 @@
 <epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:orcid_export_ok">Data Export to ORCID was successful</epp:phrase>
 <epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:orcid_export_error">Data Export to ORCID error: <epc:pin name="code" />  </epp:phrase>
 <epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:orcid_export_fail">Data Export to ORCID was NOT successful</epp:phrase>
+
+<epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:no_data">No Data is available</epp:phrase>
+
+<epp:phrase id="orcid_connect_btn:title">Create or Connect your ORCID iD</epp:phrase>
+
+<epp:phrase id="Plugin/InputForm/Component/Field/OrcidId:title">ORCID iD</epp:phrase>
+<epp:phrase id="Plugin/InputForm/Component/Field/OrcidId:action:create:title">Get Id</epp:phrase>
+
+<epp:phrase id="Plugin/Screen/Admin/Orcid/OrcidManager:title">ORCID</epp:phrase>
+<epp:phrase id="Plugin/Screen/Admin/Orcid/OrcidManager:description">ORCID management utility</epp:phrase>
 
 </epp:phrases>

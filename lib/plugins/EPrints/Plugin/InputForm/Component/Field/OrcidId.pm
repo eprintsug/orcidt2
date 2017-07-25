@@ -21,18 +21,49 @@ sub new
 	$self->{name} = "OrcidId";
 	$self->{visible} = "all";
 
-#	$self->{actions} = [qw/ create /];
-
 	return $self;
 }
 
+##########################################################################################
+##
+## override this method so that we can process the remove button. Calling the super function
+## allows the value to be specified in the input field. This may not be a very good idea.
+## it is probably true to say that there should not actually be an input field for this
+## component
+##
+##########################################################################################
+sub update_from_form
+{
+        my( $self, $processor ) = @_;
+        my $field = $self->{config}->{field};
+        my $session = $self->{session};
+        my $prefix = $self->{prefix};
+
+        my $ibutton = $self->get_internal_button;
+        my $ibutton_pressed = $session->internal_button_pressed;
+	if ( $ibutton =~ m/^orcid_remove$/ )
+	{
+		$self->{dataobj}->set_value( $field->get_name, "" );
+		return;
+	}
+	return $self->SUPER::update_from_form();
+}
+
+
+##########################################################################################
+##
+## Render the details of this workflow component
+## this renders the title, the input field and the conect button
+## if the orcid id is already set for this user then the input field is not editable
+## and the button is disabled
+##
+##########################################################################################
 	
 sub render_content
 {
 	my( $self, $surround ) = @_;
 	my $repo = $self->{session};
 	my $xml = $repo->xml;
-print STDERR "OrcidId::render_content called for [".$self->{config}->{field}->{name} ."]\n";
 	
 	my $value;
 	if( $self->{dataobj} )
@@ -45,6 +76,7 @@ print STDERR "OrcidId::render_content called for [".$self->{config}->{field}->{n
 	}
 
 	my $frag = $repo->make_doc_fragment;
+
 	my $table = $frag->appendChild( $xml->create_element( "table", class=>"ep_multi" ) );
 	my $tr = $table->appendChild( $xml->create_element( "tr", class=>"ep_first" ) );
 	my $th = $tr->appendChild( $xml->create_element( "th", class=>"ep_multi_heading" ) );
@@ -59,8 +91,38 @@ print STDERR "OrcidId::render_content called for [".$self->{config}->{field}->{n
 	my $td_input = $tr_input->appendChild( $xml->create_element( "td", valign=>"top" ) );
 
 
+	if ( $value )
+	{
+		my $fieldname = $self->{prefix}."_".$self->{config}->{field}->name;
 
-	$td_input->appendChild( $self->{config}->{field}->render_input_field( 
+		$td_input->appendChild( $repo->render_hidden_field( $fieldname, $value ) );
+		$td_input->appendChild( $repo->call( "render_orcid_id", $repo, $value ) );
+                $td_input->appendChild( $repo->make_element(
+                                        "input",
+                                        type=>"image",
+                                        src=> "/style/images/delete.png",
+                                        alt=>"Remove",
+                                        title=>"Remove",
+                                        name=>"_internal_".$self->{prefix}."_orcid_remove",
+                                        class => "epjs_ajax",
+					id => "delete-orcid-button",
+                                        value=>"1" ));
+
+		my $button = $td3->appendChild( $xml->create_element( "button", 
+					id => "disabled-connect-orcid-button",
+					type => "button",
+					disabled => "true"
+					) );
+		$button->appendChild( $xml->create_element( "img", 
+			id =>"orcid-id-logo-24", 
+			src =>"/style/images/orcid_24x24.png", 
+			alt =>"ORCID logo" ) );
+					
+		$button->appendChild( $repo->html_phrase( "orcid_connect_btn:title" ) );
+	}
+	else
+	{
+		$td_input->appendChild( $self->{config}->{field}->render_input_field( 
 			$repo, 
 			$value, 
 			$self->{dataobj}->get_dataset,
@@ -68,28 +130,33 @@ print STDERR "OrcidId::render_content called for [".$self->{config}->{field}->{n
 			undef,
 			$self->{dataobj},
 			$self->{prefix},
- 	) );
+ 		) );
 
-	my $auth_url = $repo->call( "get_orcid_authorise_url", $repo, $self->{dataobj}->get_id(), 0, "authenticate" ); 
+		my $activity = "02"; # user_authenticate
+		my $scope = "/authenticate /activities/update /person/update /read-limited";
+		my $auth_url = $repo->call( "get_orcid_authorise_url", $repo, $self->{dataobj}->get_id(), 0, $scope, $activity ); 
+		my $user_name = $self->{dataobj}->get_value( "name" );
+		my $user_email = $self->{dataobj}->get_value( "email" );
+		$auth_url .= "&family_names=". $user_name->{family} if $user_name->{family};
+		$auth_url .= "&given_names=". $user_name->{given} if $user_name->{given};
 
-	my $user_name = $self->{dataobj}->get_value( "name" );
-	my $user_email = $self->{dataobj}->get_value( "email" );
-	$auth_url .= "&family_names=". $user_name->{family} if $user_name->{family};
-	$auth_url .= "&given_names=". $user_name->{given} if $user_name->{given};
-
-	# the javascript function appends the current orcid from the input text box or the email address
-	# and then loads the url
-	#my $link = $xml->create_element( "img", width=>100, height=>50, 
-	#			src=>"/style/images/getorcid.png", 
-	my $link = $xml->create_element( "img", width=>138, height=>50, 
-				src=>"/style/images/getorcid_2.png", 
-				style=>"float:right;",
-				onclick=>"EPJS_appendOrcidIfSet( \'$self->{prefix}\', 
+		# the javascript function appends the current orcid from the input text box or the email address
+		# and then loads the url
+		my $button = $td3->appendChild( $xml->create_element( "button", 
+					id => "connect-orcid-button",
+					type => "button",
+					onclick => "EPJS_appendOrcidIfSet( \'$self->{prefix}\', 
 								\'$self->{config}->{field}->{name}\', 
 								\'$auth_url\', 
 								\'$user_email\' );" ,
-			 	);
-	$td3->appendChild( $link );
+	
+					) );
+		$button->appendChild( $xml->create_element( "img", 
+			id =>"orcid-id-logo", 
+			src =>"/style/images/orcid_24x24.png", 
+			alt =>"ORCID logo" ) );
+		$button->appendChild( $repo->html_phrase( "orcid_connect_btn:title" ) );
+	}
 
 	return $frag;
 }
@@ -101,7 +168,6 @@ sub render_title
 	my $xml = $self->{repository}->xml;
 	return $self->html_phrase( "title" );
 }
-
 
 
 1;
