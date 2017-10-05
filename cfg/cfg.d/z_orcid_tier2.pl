@@ -1,8 +1,32 @@
-#
-# Settings for the Orcid Member api
-#
+=begin InternalDoc
 
-#new permissions for ORCiD 
+=over
+
+=item ORCiD member api integration
+
+=back
+
+Fields, configuration and utility functions for the ORCiD member api
+
+=end InternalDoc
+
+=cut
+
+
+=begin InternalDoc
+
+=over
+
+=item permissions
+
+=back
+
+new permissions for ORCiD
+
+=end InternalDoc
+
+=cut
+
 $c->{roles}->{"orcid"} =
 [
         "orcid/destroy",
@@ -10,14 +34,28 @@ $c->{roles}->{"orcid"} =
         "orcid/view",
 ];
 
+push @{$c->{user_roles}->{user}}, 'orcid';
+push @{$c->{user_roles}->{submitter}}, 'orcid';
+push @{$c->{user_roles}->{editor}}, 'orcid';
 push @{$c->{user_roles}->{admin}}, 'orcid';
 
-#
-# new user fields for the id and persistent authorisation tokens obtained via OAuth.
-# see: http://members.orcid.org/api/orcid-scopes
-#
+=begin InternalDoc
+
+=over
+
+=item New User fields
+
+=back
+
+new user fields for the id and persistent authorisation tokens obtained via OAuth.
+see: http://members.orcid.org/api/orcid-scopes
+
+=end InternalDoc
+
+=cut
+
 push @{$c->{fields}->{user}},
-{ name => 'orcid', type => 'id', },
+{ name => 'orcid', type => 'id', input_cols => '25' },
 { name => 'orcid_rl_token', type => 'text', },
 { name => 'orcid_act_u_token', type => 'text', },
 { name => 'orcid_bio_u_token', type => 'text', },
@@ -58,9 +96,20 @@ push @{$c->{fields}->{user}},
 	],
 };
 
-#
-# repository field mapping
-#
+=begin InternalDoc
+
+=over
+
+=item repository field mapping
+
+=back
+
+mapping between ORCID Works fields and repository fields
+
+=end InternalDoc
+
+=cut
+
 $c->{item_doi_field} = "doi";
 $c->{item_pmid_field} = "pubmed_id";
 $c->{user_orcid_id_field} = "orcid";
@@ -76,16 +125,19 @@ $c->{orcid_import_plugin_rank} = {
 		"PMID" => 99,
 };
 
-#
-# ORCID Config and utilities
-#
+=begin InternalDoc
 
-$c->{orcid_version} =  '2.0';
-$c->{orcid_member_server} =  'https://sandbox.orcid.org/';
-$c->{orcid_member_api} =  'https://api.sandbox.orcid.org/';
-$c->{orcid_public_api} =  'https://pub.sandbox.orcid.org/';
+=over
 
-$c->{orcid_exchange_url} = $c->{orcid_member_api} . 'oauth/token' ; 
+=item Mappings
+
+=back
+
+Mappings for scopes and eprint fields for storing the tokens and put codes
+
+=end InternalDoc
+
+=cut
 
 $c->{orcid_scope_map} = {
 	"/read-limited" 	=> "orcid_rl_token", 
@@ -117,6 +169,10 @@ $c->{put_code_tag_for_endpoint} = {
 };
 
 
+####################################################################################################	
+# Old (V1.0) style activity based mapping for scopes. This is still required as not all of the code
+# has been updated to use the new API
+####################################################################################################	
 $c->{orcid_activity_map} = {
 	authenticate => {
 		scope 		=> "/authenticate",
@@ -245,6 +301,9 @@ $c->{orcid_activity_map} = {
 };
 
 
+####################################################################################################	
+# Mapping between ORCID Work types and EPrint types (Not currently required)
+####################################################################################################	
 $c->{orcid_work_type_map} = {
 	article => "journal-article",
 	magazine_article => "magazine article",
@@ -261,10 +320,19 @@ $c->{orcid_work_type_map} = {
 	other => "other",
 };
 
+=begin InternalDoc
 
-#
-# ORCID Utilities
-#
+=over
+
+=item get_orcid_query_url ( $repo, $user_id, $item_id, $activity, $orcid_id )
+
+=back
+
+Utility routine to form the query url
+
+=end InternalDoc
+
+=cut
 
 $c->{get_orcid_query_url} = sub
 {
@@ -273,6 +341,20 @@ $c->{get_orcid_query_url} = sub
 
 
 };
+
+=begin InternalDoc
+
+=over
+
+=item get_orcid_authorise_url ( $repo, $user_id, $item_id, $scope, $activity, $orcid_id )
+
+=back
+
+Utility routine to form the authorise url
+
+=end InternalDoc
+
+=cut
 
 $c->{get_orcid_authorise_url} = sub
 {
@@ -295,7 +377,21 @@ $c->{get_orcid_authorise_url} = sub
 	return $orcid_authorise_url;
 };
 
+=begin InternalDoc
 
+=over
+ 
+=item form_orcid_work_xml ( $repo, $item_id, )
+
+=back
+
+Utility routine to form the xml for works data 
+
+(not currently required)
+
+=end InternalDoc
+
+=cut
 
 $c->{form_orcid_work_xml} = sub
 {
@@ -455,6 +551,20 @@ print STDERR "form_orcid_work_xml [".$xml_str."]\n";
 
 };
 
+=begin InternalDoc
+
+=over
+
+=item form_orcid_affiliation_xml ( $repo, $user, $put_code )
+
+=back
+
+Utility routine to form the xml for affiliation (employment) data
+
+=end InternalDoc
+
+=cut
+
 $c->{form_orcid_affiliation_xml} = sub
 {
         my( $repo, $user, $put_code ) = @_;
@@ -479,14 +589,10 @@ $c->{form_orcid_affiliation_xml} = sub
 		$act_xml->setAttribute( "xsi:schemaLocation", "http://www.orcid.org/ns/employment ../employment-2.0.xsd" );
 		$act_xml->setAttribute( "put-code", $put_code );
 	}
-        my $dept = $act_xml->appendChild( $xml->create_element( "employment:department-name" ) );
-if ( $put_code ) {
-        $dept->appendChild( $xml->create_text_node( "MODIFIED Department" ) );
-}else{
-        $dept->appendChild( $xml->create_text_node( "Department" ) );
-}
-        my $role = $act_xml->appendChild( $xml->create_element( "employment:role-title" ) );
-        $role->appendChild( $xml->create_text_node( "Role title" ) );
+        #my $dept = $act_xml->appendChild( $xml->create_element( "employment:department-name" ) );
+        #$dept->appendChild( $xml->create_text_node( "Department" ) );
+        #my $role = $act_xml->appendChild( $xml->create_element( "employment:role-title" ) );
+        #$role->appendChild( $xml->create_text_node( "Role title" ) );
         #my $start = $act_xml->appendChild( $xml->create_element( "common:start-date" ) );
         #my $end = $act_xml->appendChild( $xml->create_element( "common:end-date" ) );
         my $organisation = $act_xml->appendChild( $xml->create_element( "employment:organization" ) );
@@ -507,9 +613,23 @@ if ( $put_code ) {
 
         my $prolog = '<?xml version="1.0" encoding="UTF-8"?>';
         my $xml_str = $prolog.$act_xml->toString();
-print STDERR "form_orcid_affiliation_xml [".$xml_str."]\n";
+#print STDERR "form_orcid_affiliation_xml [".$xml_str."]\n";
         return $xml_str;
 };
+
+=begin InternalDoc
+
+=over
+
+=item valid_orcid_id ( $orcid_id, )
+
+=back
+
+utility routine to test the validity of the format of an ORCID iD
+
+=end InternalDoc
+
+=cut
 
 $c->{valid_orcid_id} = sub
 {
@@ -517,7 +637,21 @@ $c->{valid_orcid_id} = sub
 
 	return $orcid_id && $orcid_id =~ /\d{4}-\d{4}-\d{4}-\d{3}[Xx\d]/
 };
-	
+
+=begin InternalDoc
+
+=over
+
+=item render_orcid_id ( $repo, $orcid_id )
+
+=back
+
+utility routine to render an ORCID iD using current guidelines
+
+=end InternalDoc
+
+=cut
+
 $c->{render_orcid_id} = sub
 {
         my( $repo, $orcid_id ) = @_;
@@ -536,11 +670,142 @@ $c->{render_orcid_id} = sub
 	return $frag;
 };
 
+=begin InternalDoc
+
+=over
+
+=item convert_orcid_work_type ( $repo, $orcid_type )
+
+=back
+
+utility routine to convert ORCID work types to EPrint item types
+
+=end InternalDoc
+
+=cut
+
+$c->{convert_orcid_work_type} = sub
+{
+        my( $repo, $orcid_type ) = @_;
+
+	return unless $orcid_type;
+	my $type = lc( $orcid_type );
+	$type =~ s/_/\-/g;
+
+	my $type_map = {
+		"journal-article" => 'article',
+		'magazine-article' => 'article',
+		'book-chapter' => 'book_section',
+		'book' => 'book',
+		'report' => 'article',
+		'conference-paper' => 'conference_item',
+		'working-paper' => 'article',
+		'supervised-student-publication' => 'thesis',
+		'journal-issue' => 'article',
+		'data set' => 'dataset',
+		'patent' => 'patent',
+		'other' => 'other',
+	};
+	return $type_map->{$type} if $type_map->{$type};
+	return $type; 
+};
+
+=begin InternalDoc
+
+=over
+
+=item get_works_for_orcid ( $repo, $orcid_id )
+
+=back
+
+utility routine to get ORCID works for the supplied ORCID iD
+
+The routine first looks up the ORCID iD in the user dataset to extract
+the read_limited scope token.
+
+If no user is found then the client read_public token can be used
+N.B. if a user is found but no read_limited token is found then the
+code will not revert to the read_public token as in this case it may
+be that the user has revoked the permission
+ 
+with a token a call is made to read the works summay data from the ORCID 
+Registry
+
+a hash containing the user id, the return code and the returned data is 
+returned to the caller.
+
+=end InternalDoc
+
+=cut
+
+$c->{get_works_for_orcid} = sub
+{
+        my( $repo, $orcid_id ) = @_;
+
+	# default to the read_public token if the user has not given permission?
+	my $token = $repo->config( "orcid_read_public_token" );
+	# find the user with the specified orcid id
+	my $list = $repo->dataset( 'user' )->search(
+		filters => [
+                 	{ meta_fields => [ 'orcid' ], value => $orcid_id, match => 'EX' }
+                 ] );
+
+	# Uncomment the next line to return from this routine if there is no user
+	# with the supplied ORCID iD
+	# If the routine is allowed to continue it will use the read_public permission
+	# to attempt to import works for the supplied iD
+
+#	return undef unless $list->count == 1;
+
+	my $user;
+	if ( $list->count == 1 )
+	{
+		$user = $list->item(0);
+		$token = $user->get_value( "orcid_rl_token" );
+	}
+
+	my $url =  $repo->config( "orcid_member_api" ) . 'v' .$repo->config( "orcid_version" ).'/'.$orcid_id.'/works'; 
+
+	my $ua = LWP::UserAgent->new;
+	my $request = new HTTP::Request( GET => $url,
+			HTTP::Headers->new(
+				'Content-Type' => 'application/json', 
+				'Authorization' => 'Bearer '.$token )
+		);
+        $request->header( "accept" => "application/json" );
+
+
+	my $response = $ua->request($request);
+	my $user_id;
+	my $code;
+	my $data;
+	if ( $response )
+	{
+		$code = $response->code;
+		$data = $response->content;
+	}
+	$user_id = $user->get_id if $user;
+
+	my $result = {
+		user => $user_id,
+		code => $code,
+		data => $data,
+	};
+
+	return $result;	
+
+
+};
+
+
+
+
 # 
 # Enable/disable the Orcid plugins
 #
 
-$c->{plugins}->{"Import::Orcid"}->{params}->{disable} = 0;
+$c->{plugins}->{"Import::Orcid"}->{params}->{disable} = 1;
+$c->{plugins}->{"Import::UZHOrcid"}->{params}->{disable} = 0;
 $c->{plugins}->{"InputForm::Component::Field::OrcidId"}->{params}->{disable} = 0;
 $c->{plugins}->{"Orcid::Add"}->{params}->{disable} = 0;
 $c->{plugins}->{"Orcid::AddWorks"}->{params}->{disable} = 0;
@@ -550,8 +815,9 @@ $c->{plugins}->{"Orcid::Read"}->{params}->{disable} = 0;
 $c->{plugins}->{"Orcid::ReadProfile"}->{params}->{disable} = 0;
 $c->{plugins}->{"Orcid::ReadResearch"}->{params}->{disable} = 0;
 $c->{plugins}->{"Orcid"}->{params}->{disable} = 0;
-$c->{plugins}->{"Screen::Admin::Orcid::OrcidManager"}->{params}->{disable} = 0;
+$c->{plugins}->{"Screen::Admin::Orcid::OrcidManager"}->{params}->{disable} = 1;
 $c->{plugins}->{"Screen::Import::Orcid"}->{params}->{disable} = 0;
+$c->{plugins}->{"Screen::Import::UZHOrcid"}->{params}->{disable} = 0;
 $c->{plugins}->{"Screen::User::Orcid::OrcidManager"}->{params}->{disable} = 0;
 
 

@@ -1,10 +1,11 @@
 =head1 NAME
 
-	EPrints::Plugin::Screen::User::Orcid::OrcidManager
+EPrints::Plugin::Screen::User::Orcid::OrcidManager
 
-	This screen plugin provides a landing screen for the
-	create/connect actions plus a facility to manage
-	permissions, perform actions and view data
+This screen plugin provides a landing screen for the
+create/connect actions plus a facility to manage
+permissions, perform actions and view data
+
 =cut
 
 package EPrints::Plugin::Screen::User::Orcid::OrcidManager;
@@ -23,18 +24,31 @@ sub new
 	$self->{appears} = [
 		{
 			place => "key_tools",
-			position => 1050,
+			position => 290,
 		}
 	];
         $self->{actions} = [qw/ read_record update_activities update_profile revoke_read revoke_update_activities 
-				revoke_update_profile /];
+				revoke_update_profile remove_id /];
 
 
 	return $self;
 }
 
+=begin InternalDoc
+
+=over
+
+=item from
+
+=back
+
+override parent routine so that we can allow custom internal actions
+
+=end InternalDoc
+
+=cut
+
 ########################################################################################
-# override parent routine so that we can allow custom internal actions
 #
 # This is currently commented out as no internal actions are enabled yet
 ########################################################################################
@@ -90,10 +104,20 @@ sub new
 #}
 
 
+=begin InternalDoc
 
-########################################################################################
-# control visibility of the screen plugin via a user/role permission
-########################################################################################
+=over
+
+=item can_be_viewed
+
+=back
+
+control visibility of the screen plugin via a user/role permission
+
+=end InternalDoc
+
+=cut
+
 sub can_be_viewed
 {
 	my( $self ) = @_;
@@ -101,10 +125,20 @@ sub can_be_viewed
 	return $self->allow( "orcid/view" );
 }
 
+=begin InternalDoc
 
-########################################################################################
-# Screen plugin action to get the user's permission for the read-limited scope
-########################################################################################
+=over
+
+=item allow_read_record, action_read_record 
+
+=back
+
+Screen plugin action to get the user's permission for the read-limited scope
+
+=end InternalDoc
+
+=cut
+
 sub allow_read_record
 {
         return 1;
@@ -118,9 +152,20 @@ sub action_read_record
 	$self->get_permission( $scope );
 }
 
-########################################################################################
-# Screen plugin action to get the user's permission for the activities/update scope
-########################################################################################
+=begin InternalDoc
+
+=over
+
+=item allow_update_activities, action_update_activities
+
+=back
+
+Screen plugin action to get the user's permission for the activities/update scope
+
+=end InternalDoc
+
+=cut
+
 sub allow_update_activities
 {
         return 1;
@@ -133,9 +178,20 @@ sub action_update_activities
 	$self->get_permission( $scope );
 }
 
-########################################################################################
-# Screen plugin action to get the user's permission for the person/update scope
-########################################################################################
+=begin InternalDoc
+
+=over
+
+=item allow_update_profile, action_update_profile
+
+=back
+
+Screen plugin action to get the user's permission for the person/update scope
+
+=end InternalDoc
+
+=cut
+
 sub allow_update_profile
 {
         return 1;
@@ -148,12 +204,22 @@ sub action_update_profile
 	$self->get_permission( $scope );
 }
 
+=begin InternalDoc
 
-########################################################################################
-# Screen plugin action to revoke the user's permission for the /read-limited scope
-# N.B. this simply deletes the token stored for the scope the user's ORCID profile
-# is not modified.
-########################################################################################
+=over
+
+=item allow_revoke_read, action_revoke_read
+
+=back
+
+Screen plugin action to revoke the user's permission for the /read-limited scope
+N.B. this simply deletes the token stored for the scope the user's ORCID profile
+is not modified.
+
+=end InternalDoc
+
+=cut
+
 sub allow_revoke_read
 {
         return 1;
@@ -167,12 +233,22 @@ sub action_revoke_read
 	$self->revoke_permission( $scope );
 }
 
+=begin InternalDoc
 
-########################################################################################
-# Screen plugin action to revoke the user's permission for the /activities/update scope
-# N.B. this simply deletes the token stored for the scope the user's ORCID profile
-# is not modified.
-########################################################################################
+=over
+
+=item allow_revoke_update_activities,action_revoke_update_activities
+
+=back
+
+Screen plugin action to revoke the user's permission for the /activities/update scope
+N.B. this simply deletes the token stored for the scope the user's ORCID profile
+is not modified.
+
+=end InternalDoc
+
+=cut
+
 sub allow_revoke_update_activities
 {
         return 1;
@@ -186,11 +262,22 @@ sub action_revoke_update_activities
 	$self->revoke_permission( $scope );
 }
 
-########################################################################################
-# Screen plugin action to revoke the user's permission for the /person/update scope
-# N.B. this simply deletes the token stored for the scope the user's ORCID profile
-# is not modified.
-########################################################################################
+=begin InternalDoc
+
+=over
+
+=item allow_revoke_update_profile, action_revoke_update_profile
+
+=back
+
+Screen plugin action to revoke the user's permission for the /person/update scope
+N.B. this simply deletes the token stored for the scope the user's ORCID profile
+is not modified.
+
+=end InternalDoc
+
+=cut
+
 sub allow_revoke_update_profile
 {
         return 1;
@@ -204,10 +291,53 @@ sub action_revoke_update_profile
 	$self->revoke_permission( $scope );
 }
 
-########################################################################################
-# Request permission from the user for a particular scope. This uses the auth plugin to
-# handle the user's response
-########################################################################################
+=begin InternalDoc
+
+=over
+
+=item allow_remove_id, action_remove_id
+
+=back
+
+Screen plugin action to revoke the user's permission for the /person/update scope
+N.B. this simply deletes the token stored for the scope the user's ORCID profile
+is not modified.
+
+=end InternalDoc
+
+=cut
+
+sub allow_remove_id
+{
+        return 1;
+}
+
+sub action_remove_id
+{
+        my( $self ) = @_;
+
+        my $repo = $self->{repository};
+	my $user = $repo->current_user;
+	return unless $user;
+	$user->set_value( 'orcid', undef );
+	$user->commit;
+}
+
+=begin InternalDoc
+
+=over
+
+=item get_permission ( $self, $scope )
+
+=back
+
+Request permission from the user for a particular scope. This uses the auth plugin to
+handle the user's response
+
+=end InternalDoc
+
+=cut
+
 sub get_permission
 {
         my( $self, $scope ) = @_;
@@ -222,9 +352,20 @@ sub get_permission
 	$repo->redirect( $auth_url );
 }
 
-########################################################################################
-# Delete the token stored for the user for the specified scope 
-########################################################################################
+=begin InternalDoc
+
+=over
+
+=item revoke_permission ( $self, $scope )
+
+=back
+
+Delete the token stored for the user for the specified scope 
+
+=end InternalDoc
+
+=cut
+
 sub revoke_permission
 {
         my( $self, $scope ) = @_;
@@ -237,22 +378,31 @@ sub revoke_permission
 	$user->commit;
 }
 
+=begin InternalDoc
 
-########################################################################################
-# This is the main render routine for the screen plugin
-# If there is an ORCID iD stored for the user then it will be displayed
-# and the create/connect button will be disabled.
-#
-# The state of the tokens stored for a user will also be displayed along with a button 
-# toggle the state of the permissions. 
-#
-# N.B. the presence of a token for a scope does not necessarily mean that the token
-# is still valid.
-#
-# If there is no ORCID iD then an input field and an active create/connectbutton is 
-# displayed.
-#
-########################################################################################
+=over
+
+=item render ( $self )
+
+=back
+
+This is the main render routine for the screen plugin
+If there is an ORCID iD stored for the user then it will be displayed
+and the create/connect button will be disabled.
+
+The state of the tokens stored for a user will also be displayed along with a button 
+toggle the state of the permissions. 
+
+N.B. the presence of a token for a scope does not necessarily mean that the token
+is still valid.
+
+If there is no ORCID iD then an input field and an active create/connectbutton is 
+displayed.
+
+=end InternalDoc
+
+=cut
+
 sub render
 {
 	my( $self ) = @_;
@@ -321,10 +471,21 @@ sub render
 
 	return $f;
 }	
-	
-########################################################################################
-# Display a message to indicate no data has been obtained from the ORCID Registry
-########################################################################################
+
+=begin InternalDoc
+
+=over
+
+=item render_no_results ( $self, ) 
+
+=back
+
+Display a message to indicate no data has been obtained from the ORCID Registry
+
+=end InternalDoc
+
+=cut
+
 sub render_no_results
 {
 	my( $self, ) = @_;
@@ -334,12 +495,21 @@ sub render_no_results
 	return $self->html_phrase( "no_data" );
 }
 
+=begin InternalDoc
 
-#############################################################################
-# display the connect/create button based on 
-# http://members.orcid.org/api/resources/graphics
-#############################################################################
-	
+=over
+
+=item render_id_selection ( $self, $orcid_prefix, $user, $value, )
+
+=back
+
+display the connect/create button based on 
+http://members.orcid.org/api/resources/graphics
+
+=end InternalDoc
+
+=cut
+
 sub render_id_selection
 {
 	my( $self, $orcid_prefix, $user, $value, ) = @_;
@@ -350,11 +520,18 @@ sub render_id_selection
 
 	my $frag = $repo->make_doc_fragment;
 	my $div = $frag->appendChild( $xml->create_element( "div", class=>"orcid_connect" ) );
+	my $text_div = $div->appendChild( $xml->create_element( "div", class=>"orcid_connect_text" ) );
 	my $input_div = $div->appendChild( $xml->create_element( "div", class=>"orcid_connect_input" ) );
 	my $btn_div = $div->appendChild( $xml->create_element( "div", class=>"orcid_connect_btn" ) );
 	if ( $value )
 	{
 		$input_div->appendChild( $repo->call( "render_orcid_id", $repo, $value ) );
+		my $rm_action= $input_div->appendChild( $xml->create_element( "input", 
+			value => $self->phrase( "action:remove_id:title" ),
+			type => "submit", 
+			name => "_action_remove_id", 
+			class => "btn btn-uzh-prime" ) );
+
 		my $button = $btn_div->appendChild( $xml->create_element( "button", 
 					id => "disabled-connect-orcid-button",
 					type => "button",
@@ -369,6 +546,7 @@ sub render_id_selection
 	}
 	else
 	{
+                $text_div->appendChild( $repo->html_phrase( "user_fieldhelp_orcid" ) );
 		$input_div->appendChild( $field->render_input_field( 
 			$repo, 
 			$value, 
@@ -403,15 +581,28 @@ sub render_id_selection
 			id =>"orcid-id-logo", 
 			src =>"/style/images/orcid_24x24.png", 
 			alt =>"ORCID logo" ) );
-		$button->appendChild( $xml->create_text_node( "Create or Connect your ORCID iD") ); 
+		$button->appendChild( $repo->html_phrase( "orcid_connect_btn:title" ) ); 
 	}
 
 
 	return $frag;
 }
-	
-########################################################################################
-########################################################################################
+
+=begin InternalDoc
+
+=over
+
+=item render_selected_details ( $self, $orcid_prefix, $user )
+
+=back
+
+routine to render the scopes and the current state of the associated tokens plus
+actions to toggle the state.
+
+=end InternalDoc
+
+=cut
+
 sub render_selected_details
 {
 	my( $self, $orcid_prefix, $user ) = @_;

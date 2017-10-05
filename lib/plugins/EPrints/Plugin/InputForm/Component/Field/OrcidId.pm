@@ -24,14 +24,23 @@ sub new
 	return $self;
 }
 
-##########################################################################################
-##
-## override this method so that we can process the remove button. Calling the super function
-## allows the value to be specified in the input field. This may not be a very good idea.
-## it is probably true to say that there should not actually be an input field for this
-## component
-##
-##########################################################################################
+=begin InternalDoc
+
+=over
+
+=item update_from_form ( $self, $processor )
+
+=back
+
+override this method so that we can process the remove button. Calling the super function
+allows the value to be specified in the input field. This may not be a very good idea.
+it is probably true to say that there should not actually be an input field for this
+component
+
+=end InternalDoc
+
+=cut
+
 sub update_from_form
 {
         my( $self, $processor ) = @_;
@@ -49,16 +58,23 @@ sub update_from_form
 	return $self->SUPER::update_from_form();
 }
 
+=begin InternalDoc
 
-##########################################################################################
-##
-## Render the details of this workflow component
-## this renders the title, the input field and the conect button
-## if the orcid id is already set for this user then the input field is not editable
-## and the button is disabled
-##
-##########################################################################################
-	
+=over
+
+=item render_content ( $self, $surround )
+
+=back
+
+Render the details of this workflow component
+this renders the title, the input field and the conect button
+if the orcid id is already set for this user then the input field is not editable
+and the button is disabled
+
+=end InternalDoc
+
+=cut
+
 sub render_content
 {
 	my( $self, $surround ) = @_;
@@ -97,17 +113,18 @@ sub render_content
 
 		$td_input->appendChild( $repo->render_hidden_field( $fieldname, $value ) );
 		$td_input->appendChild( $repo->call( "render_orcid_id", $repo, $value ) );
-                $td_input->appendChild( $repo->make_element(
-                                        "input",
-                                        type=>"image",
-                                        src=> "/style/images/delete.png",
-                                        alt=>"Remove",
-                                        title=>"Remove",
-                                        name=>"_internal_".$self->{prefix}."_orcid_remove",
-                                        class => "epjs_ajax",
-					id => "delete-orcid-button",
-                                        value=>"1" ));
-
+#                $td_input->appendChild( $repo->make_element(
+#                                        "input",
+#                                        type=>"image",
+#                                        src=> "/style/images/action_remove.png",
+#                                       # src=> "/style/images/delete.png",
+#                                        alt=>"Remove",
+#                                        title=>"Remove",
+#                                        name=>"_internal_".$self->{prefix}."_orcid_remove",
+#                                        class => "epjs_ajax",
+#					id => "delete-orcid-button",
+#                                        value=>"1" ));
+#
 		my $button = $td3->appendChild( $xml->create_element( "button", 
 					id => "disabled-connect-orcid-button",
 					type => "button",
@@ -160,6 +177,20 @@ sub render_content
 
 	return $frag;
 }
+
+=begin InternalDoc
+
+=over
+
+=item render_title ( $self, $surround )
+
+=back
+
+Render the field title
+
+=end InternalDoc
+
+=cut
 
 sub render_title
 {

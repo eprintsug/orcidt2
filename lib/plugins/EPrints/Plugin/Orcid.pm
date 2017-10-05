@@ -30,10 +30,21 @@ sub new
 	return $self;
 }
 
-########################################################################################
-# This is part of the Plugin framework and allows specific ORCID plugins to be found
-# based upon the scope. 
-########################################################################################
+=begin InternalDoc
+
+=over
+
+=item matches ( $self, $test, $param )
+
+=back
+
+This is part of the Plugin framework and allows specific ORCID plugins to be found
+based upon the scope.
+
+=end InternalDoc
+
+=cut
+
 sub matches 
 {
 	my( $self, $test, $param ) = @_;
@@ -48,9 +59,20 @@ sub matches
 }
 
 
-########################################################################################
-## This routine should be overridden in the subclass
-########################################################################################
+=begin InternalDoc
+
+=over
+
+=item perform_action ( $self, $scope, $orcid, $token, $action )
+
+=back
+
+This routine should be overridden in the subclass
+
+=end InternalDoc
+
+=cut
+
 sub perform_action
 {
 	my( $self, $scope, $orcid, $token, $action ) = @_;
@@ -58,9 +80,20 @@ sub perform_action
 	return $orcid ;
 }
 
-########################################################################################
-# This is a utility routine to store the users token for a specifed scope
-########################################################################################
+=begin InternalDoc
+
+=over
+
+=item store_token_for_scope ( $self, $scope, $orcid, $token, $user_id )
+
+=back
+
+This is a utility routine to store the users token for a specifed scope
+
+=end InternalDoc
+
+=cut
+
 sub store_token_for_scope
 {
 	my( $self, $scope, $orcid, $token, $user_id ) = @_;
@@ -78,22 +111,31 @@ sub store_token_for_scope
 	{
 		$user->set_value( $field, $token );
 		$user->commit();
-print STDERR "####### Orcid:store_token_for_action updated user field [$field] with token[$token] \n";
 	}
 	else
 	{
 		$repo->render_message( 'error', $repo->html_phrase( "cgi/orcid/ReadProfile:error:user_update_failed" ) );
-print STDERR "####### updated user ERROR redirect to [".$repo->config( 'userhome' )."]\n";
 	}
 	return;
 }
 
-########################################################################################
-# This utility routine will return undef or a token for the action that the plugin is
-# designed to handle. There is no default action defined for this class but sub classes
-# that implement specific ORCID Plugins will define an action/scope that they are 
-# responsible for 
-########################################################################################
+=begin InternalDoc
+
+=over
+
+=item user_permission_granted ( $self, $user, )
+
+=back
+
+This utility routine will return undef or a token for the action that the plugin is
+designed to handle. There is no default action defined for this class but sub classes
+that implement specific ORCID Plugins will define an action/scope that they are 
+responsible for 
+
+=end InternalDoc
+
+=cut
+
 sub user_permission_granted
 {
 	my( $self, $user, ) = @_;
@@ -106,10 +148,21 @@ sub user_permission_granted
 	return $user->get_value( $field );
 }
 
-########################################################################################
-# This is a generic routine to read data from the ORCID Registry
-# The action for which data is to be read is defined in the sub class
-########################################################################################
+=begin InternalDoc
+
+=over
+
+=item read_data ( $self, $user, $orcid, $scope, )
+
+=back
+
+This is a generic routine to read data from the ORCID Registry
+The action for which data is to be read is defined in the sub class
+
+=end InternalDoc
+
+=cut
+
 sub read_data
 {
 	#my( $self, $user, $orcid, $scope, $put_code, $end_point,  ) = @_;
@@ -151,13 +204,24 @@ sub read_data
 	return $result ;
 }
 
-############################################################################
-## This routine checks the user data for an appropriate put code.
-## if one is found then the orcid record is queried to request the 
-## summary data for the supplied endpoint and 
-## returns true if the user's put code for the endpoint matches a put code 
-## for one of the possible elements in the orcid summary data
-############################################################################
+=begin InternalDoc
+
+=over
+
+=item get_valid_put_code ( $self, $user, $orcid, $code_type, $end_point )
+
+=back
+
+This routine checks the user data for an appropriate put code.
+if one is found then the orcid record is queried to request the 
+summary data for the supplied endpoint and 
+returns true if the user's put code for the endpoint matches a put code 
+for one of the possible elements in the orcid summary data
+
+=end InternalDoc
+
+=cut
+
 sub get_valid_put_code
 {
 	my( $self, $user, $orcid, $code_type, $end_point ) = @_;
@@ -172,7 +236,6 @@ sub get_valid_put_code
 	{
 		if ( $code->{code} && $code->{code_type} eq $code_type )
 		{
-print STDERR "get_valid_put_code test [".$code->{code}."] [".$code->{code_type}."] against [".$code_type."]\n";
 			$put_code = $code->{code};
 			last;
 		}
@@ -208,22 +271,31 @@ print STDERR "get_valid_put_code test [".$code->{code}."] [".$code->{code_type}.
 		foreach my $element ( $result_xml->getElementsByTagName( $tag ) )
 		{
 			my $this_put_code = $element->getAttribute("put-code");
-print STDERR "\n\n\nget_valid_put_code GOT put-code[".$this_put_code."] return [".($this_put_code && $this_put_code eq $put_code)."]\n";
 			return $put_code if $this_put_code && $this_put_code eq $put_code;
 		}
 	}
 
-print STDERR "\n\n\n get_valid_put_code RETURN FALSE\n";
 	return;
 }
 
 
-############################################################################
-## This routine replaces any existing put code for a particular 
-## put_code_type with the supplied new code
-## There should be only one put code for a put code type and this routine
-## will remove any duplicates for the put code type being processed 
-############################################################################
+=begin InternalDoc
+
+=over
+
+=item save_put_code ( $self, $user, $code_type, $new_code )
+
+=back
+
+This routine replaces any existing put code for a particular 
+put_code_type with the supplied new code
+There should be only one put code for a put code type and this routine
+will remove any duplicates for the put code type being processed 
+
+=end InternalDoc
+
+=cut
+
 sub save_put_code
 {
 	my ( $self, $user, $code_type, $new_code ) = @_;

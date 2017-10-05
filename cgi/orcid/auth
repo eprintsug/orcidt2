@@ -1,4 +1,18 @@
-# Orcid AUTH script
+=begin InternalDoc
+
+=over
+
+=item Orcid AUTH script
+
+=back
+
+This is the script called by the ORCID API for the OAUTH process.
+The action is encoded in the request. This is decoded and the
+appropriate plugin is called to perform the necessary actions
+
+=end InternalDoc
+
+=cut
 
 use HTTP::Request::Common;
 use EPrints;
@@ -110,6 +124,19 @@ $repo->redirect( $repo->config( 'userhome' ) );
 $repo->terminate;
 exit;
 
+=begin InternalDoc
+
+=over
+
+=item show_error ( $repo, $error_id )
+
+=back
+
+Show the error and return
+
+=end InternalDoc
+
+=cut
 
 sub show_error
 {

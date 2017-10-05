@@ -2,6 +2,8 @@
 
 EPrints::Plugin::Orcid::Auth
 
+This is the ORCID plugin for the authenticate scope
+
 =cut
 
 package EPrints::Plugin::Orcid::Auth;
@@ -27,9 +29,20 @@ sub new
 	return $self;
 }
 
+=begin InternalDoc
 
-########################################################################################
-########################################################################################
+=over
+
+=item perform_action ( $self, $scope, $orcid, $token, $action, $user_id, $item_id )
+
+=back
+
+Perform the actual action required based upon the supplied action id
+
+=end InternalDoc
+
+=cut
+
 sub perform_action
 {
 	my( $self, $scope, $orcid, $token, $action, $user_id, $item_id ) = @_;
@@ -100,13 +113,23 @@ sub perform_action
 	return 1;
 }
 
+=begin InternalDoc
 
-########################################################################################
-## This routine attempts to set the affiliation for the user on their ORCID record
-## If an existing employment put code is found then the existing record will be updated
-## if no put code is found then a new record will be created.
-## If successful the new put code will be stored on the users details.
-########################################################################################
+=over
+
+=item set_affiliation ( $self, $user, $orcid )
+
+=back
+
+This routine attempts to set the affiliation for the user on their ORCID record
+If an existing employment put code is found then the existing record will be updated
+if no put code is found then a new record will be created.
+If successful the new put code will be stored on the users details.
+
+=end InternalDoc
+
+=cut
+
 sub set_affiliation
 {
 	my ( $self, $user, $orcid ) = @_;
@@ -161,7 +184,7 @@ sub set_affiliation
 			my $this_code = $1;
 			$self->save_put_code( $user, $put_code_type, $this_code );
 		}
-		$repo->render_message( 'message', $repo->html_phrase( "cgi/orcid/auth:added affiliation" ) );
+		$repo->render_message( 'message', $repo->html_phrase( "cgi/orcid/auth:added_affiliation" ) );
 	}
         else
         {
