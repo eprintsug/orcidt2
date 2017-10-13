@@ -410,16 +410,17 @@ sub find_duplicate
 {
 	my( $self, $work ) = @_;
 
+	my $repo = $self->{repository};
 	my $field;
 	my $val;
 	if ( $work->{doi} )
         {
-		$field = "doi";
+		$field = $repo->config( "item_doi_field" );
 		$val = $work->{"doi"};
 	}
         elsif ( $work->{pmid} )
         {
-		$field = "pubmedid";
+		$field = $repo->config( "item_pmid_field" );
         	$val = $work->{"pmid"};
         }
 	else

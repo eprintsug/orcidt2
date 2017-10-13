@@ -163,46 +163,46 @@ The action for which data is to be read is defined in the sub class
 
 =cut
 
-sub read_data
-{
-	#my( $self, $user, $orcid, $scope, $put_code, $end_point,  ) = @_;
-	my( $self, $user, $orcid, $scope, ) = @_;
-
-	return undef unless $user;
-	my $repo = $self->{repository};
-	my $activity_map = $repo->config( "orcid_activity_map" );
-	my $scope_map = $repo->config( "orcid_scope_map" );
-	my $field = $scope_map->{$self->{scope}}; 
-	my $token = $user->get_value( $field );
-
-	my $url =  $repo->config( "orcid_member_api" ) . 
-		'v'. $repo->config( "orcid_version" ) .
-		'/'. $orcid. 
-		'/'. $activity_map->{$self->{action}}->{request} ; 
-
-	my $ua = LWP::UserAgent->new;
-	my $request = new HTTP::Request( GET => $url,
-			HTTP::Headers->new(
-				'Content-Type' => 'application/vdn.orcid+xml', 
-				'Authorization' => 'Bearer '.$token )
-		);
-
-	my $response = $ua->request($request);
-
-	my $result = {
-		code => $response->code,
-		data => $response->content,
-	};
-
-	if ( 200 != $response->code )
-	{
-		my $json_vars = JSON::decode_json($response->content);
-		$result->{error} = $json_vars->{error};
-		$result->{error_description} = $json_vars->{error_description};
-	}
-
-	return $result ;
-}
+#sub read_data
+#{
+#	#my( $self, $user, $orcid, $scope, $put_code, $end_point,  ) = @_;
+#	my( $self, $user, $orcid, $scope, ) = @_;
+#
+#	return undef unless $user;
+#	my $repo = $self->{repository};
+#	my $activity_map = $repo->config( "orcid_activity_map" );
+#	my $scope_map = $repo->config( "orcid_scope_map" );
+#	my $field = $scope_map->{$self->{scope}}; 
+#	my $token = $user->get_value( $field );
+#
+#	my $url =  $repo->config( "orcid_member_api" ) . 
+#		'v'. $repo->config( "orcid_version" ) .
+#		'/'. $orcid. 
+#		'/'. $activity_map->{$self->{action}}->{request} ; 
+#
+#	my $ua = LWP::UserAgent->new;
+#	my $request = new HTTP::Request( GET => $url,
+#			HTTP::Headers->new(
+#				'Content-Type' => 'application/vdn.orcid+xml', 
+#				'Authorization' => 'Bearer '.$token )
+#		);
+#
+#	my $response = $ua->request($request);
+#
+#	my $result = {
+#		code => $response->code,
+#		data => $response->content,
+#	};
+#
+#	if ( 200 != $response->code )
+#	{
+#		my $json_vars = JSON::decode_json($response->content);
+#		$result->{error} = $json_vars->{error};
+#		$result->{error_description} = $json_vars->{error_description};
+#	}
+#
+#	return $result ;
+#}
 
 =begin InternalDoc
 
@@ -298,16 +298,26 @@ will remove any duplicates for the put code type being processed
 
 sub save_put_code
 {
-	my ( $self, $user, $code_type, $new_code ) = @_;
+	my ( $self, $user, $code_type, $new_code, $item_id ) = @_;
 	return unless $new_code && $code_type;
 	my $repo = $self->{repository};
 	my $new_codes = [];
 	my $old_codes = $user->get_value( "put_codes" );
 	foreach my $code ( @$old_codes )
 	{
-		push @$new_codes, $code unless $code->{"code_type"} eq $code_type;
+		if ( $item_id )
+		{
+			push @$new_codes, $code unless 
+				$code->{"code_type"} eq $code_type &&
+				$code->{"item"} eq $item_id;
+		}
+		else
+		{
+			push @$new_codes, $code unless $code->{"code_type"} eq $code_type;
+		}
 	}
 	my $put_code = { code => $new_code, code_type => $code_type };
+	$put_code->{item} = $item_id if $item_id;
 	push @$new_codes, $put_code;
 	$user->set_value( "put_codes", $new_codes );
 	$user->commit();

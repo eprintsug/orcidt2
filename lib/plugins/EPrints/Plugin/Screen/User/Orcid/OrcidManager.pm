@@ -27,81 +27,12 @@ sub new
 			position => 290,
 		}
 	];
-        $self->{actions} = [qw/ read_record update_activities update_profile revoke_read revoke_update_activities 
-				revoke_update_profile remove_id /];
+        $self->{actions} = [qw/ search read_record update_activities update_profile revoke_read revoke_update_activities 
+				revoke_update_profile remove_id export_data /];
 
 
 	return $self;
 }
-
-=begin InternalDoc
-
-=over
-
-=item from
-
-=back
-
-override parent routine so that we can allow custom internal actions
-
-=end InternalDoc
-
-=cut
-
-########################################################################################
-#
-# This is currently commented out as no internal actions are enabled yet
-########################################################################################
-#sub from
-#{
-#	my( $self ) = @_;
-#
-#	my $repo = $self->{repository};
-#	my $action_id = $self->{processor}->{action};
-#
-#	return if( !defined $action_id || $action_id eq "" );
-#
-#	return if( $action_id eq "null" );
-#
-#	#check for an import action
-#	if ( $action_id =~ /^import_work_(\d+)$/ )
-#	{
-#		my $format = $repo->param( $action_id."_format" );
-#		my $data = $repo->param( $action_id."_data" );
-#		my $imported = $self->import_work( $format, $data );
-#		if ( ref $imported eq "EPrints::List" && $imported->count > 0 )
-#		{
-#			$self->{processor}->add_message( "message",
-#				$self->html_phrase( "orcid_import_ok",
-#					format=>$repo->make_text( $format ),
-#					data=>$repo->make_text( $data ) ) );
-#		}
-#		else
-#		{	
-#			$self->{processor}->add_message( "error",
-#				$self->html_phrase( "orcid_import_fail",
-#					format=>$repo->make_text( $format ),
-#					data=>$repo->make_text( $data ) ) );
-#		}
-#		return;
-#	}
-#	elsif ( $action_id =~ /^export_work_(\d+)$/ )
-#	{
-#		my $exported = $self->export_work( $1 );
-#		if ( $exported )
-#		{
-#			$self->{processor}->add_message( "message",
-#				$self->html_phrase( "orcid_export_ok", ) );
-#		}
-#		else
-#		{	
-#			$self->{processor}->add_message( "error",
-#				$self->html_phrase( "orcid_export_fail", ) );
-#		}
-#		return;
-#	}
-#	return $self->SUPER::from( );
-#}
 
 
 =begin InternalDoc
@@ -124,6 +55,131 @@ sub can_be_viewed
 
 	return $self->allow( "orcid/view" );
 }
+
+=begin InternalDoc
+
+=over
+
+=item allow_search, action_search 
+
+=back
+
+Screen plugin action to search for items to export
+
+=end InternalDoc
+
+=cut
+
+sub allow_search
+{
+        return 1;
+}
+
+
+sub action_search
+{
+        my( $self ) = @_;
+        my $repo = $self->{repository};
+
+	$self->{processor}->{reqd_orcid_tab} = 1;
+	my $orcid_to_search = $repo->param("_orcid_um_search_orcid");
+	return unless $orcid_to_search;
+
+	$self->{processor}->{orcid_to_search} = $orcid_to_search;
+	unless ( $orcid_to_search )	
+	{
+		$self->{processor}->add_message( "warning",
+				$self->html_phrase( "export_error:no_id" ) );
+		return;
+	}
+	unless ( $repo->call( 'valid_orcid_id', $orcid_to_search ) ) 
+	{
+		$self->{processor}->add_message( "warning",  
+				$self->html_phrase( "incorrect_orcid_format", id=>$repo->make_text( $orcid_to_search ) ) );
+		return;
+	}
+
+}
+
+=begin InternalDoc
+
+=over
+
+=item allow_export_data, action_export_data 
+
+=back
+
+Screen plugin action to export items to the ORCID profile
+If a put_code is returned this is saved on the users profile
+so that the next export is an update rather than a create
+
+=end InternalDoc
+
+=cut
+
+sub allow_export_data
+{
+        return 1;
+}
+
+
+sub action_export_data
+{
+        my( $self ) = @_;
+        my $repo = $self->{repository};
+	my $orcid_to_update = $repo->param("_orcid_um_export_to_orcid");
+	my $token = $repo->param("_orcid_um_act_update_token");
+	my $user_id = $repo->param("_orcid_um_act_update_user_id");
+	$self->{processor}->{orcid_to_search} = $orcid_to_update;
+	my @ids_to_export = $repo->param("_orcid_um_export_code");
+
+	$self->{processor}->{reqd_orcid_tab} = 1;
+	unless ( $orcid_to_update )	
+	{
+		$self->{processor}->add_message( "warning",
+				$self->html_phrase( "export_error:no_id" ) );
+		return;
+	}
+	unless ( $repo->call( 'valid_orcid_id', $orcid_to_update ) ) 
+	{
+		$self->{processor}->add_message( "warning",  
+				$self->html_phrase( "incorrect_orcid_format", id=>$repo->make_text( $orcid_to_update ) ) );
+		return;
+	}
+	foreach my $id_to_export ( @ids_to_export )
+	{
+		# extract the id and put_code from the id_to_export
+		my $id;
+		my $put_code;
+		if ( $id_to_export =~ /(\d+)_(\d+)/ )
+		{
+			$id = $1;
+			$put_code = $2;
+		}
+		else
+		{
+			$id = $id_to_export;
+		}
+		my ( $success, $new_put_code ) = $self->export_work( $id, $orcid_to_update, $token, $put_code );
+		unless ( $success )
+		{
+			$self->{processor}->add_message( "warning",
+                                $self->html_phrase( "export_failed", id=>$repo->make_text( $orcid_to_update ), item=>$repo->make_text( $id ) ) );
+			next;
+		}
+		if ( $new_put_code )
+		{
+			my $plugin = $repo->plugin( "Orcid" );
+			my $ds = $repo->dataset( "user" );
+			my $user = $ds->dataobj( $user_id );
+			$plugin->save_put_code( $user, "work", $new_put_code, $id ) if $plugin && $user;
+		}
+		$self->{processor}->add_message( "message",
+                                $self->html_phrase( "exported", id=>$repo->make_text( $orcid_to_update ), item=>$repo->make_text( $id ) ) );
+	}
+
+}
+
 
 =begin InternalDoc
 
@@ -410,14 +466,13 @@ sub render
 	my $repo = $self->{session};
 	my $user = $repo->current_user;
 
-	my $entered_orcid = $repo->param( "orcid_input" );
 	my $xml = $repo->xml;
         my $f = $repo->render_form( "GET" );
         $f->appendChild( $repo->render_hidden_field ( "screen", "User::Orcid::OrcidManager" ) );
 
 	my $ds = $repo->dataset("user"); 
 
-	$entered_orcid = $user->get_value( "orcid" );
+	my $entered_orcid = $user->get_value( "orcid" );
 
        	my $orcid_prefix = $self->{prefix}."_orcid_um";
 	$f->appendChild( $self->render_id_selection( $orcid_prefix, $user, $entered_orcid, ) );
@@ -430,34 +485,25 @@ sub render
 		my $settings_div = $repo->make_element( "div", class => "orcid_details" );
 		my $details_div = $settings_div->appendChild( $repo->make_element( "div", class => "orcid_details" ) );
 		$details_div->appendChild( $self->render_selected_details( $orcid_prefix, $user ) ) if defined $user;		
-	
-		my $revoke_div = $settings_div->appendChild( $repo->make_element( "div", class => "orcid_details" ) );
-		$revoke_div->appendChild( $self->html_phrase( "account_settings" ) );
+
+                my $acc_link_div = $settings_div->appendChild( $repo->make_element( "div", class => "orcid_details" ) );
+                $acc_link_div->appendChild( $self->html_phrase( "account_settings" ) );
+
 		push @labels,  $self->html_phrase( "user_settings" );
 		push @panels, $settings_div;
 
-# The following panels are not currently required
+		my $export_div = $repo->make_element( "div", class => "orcid_actions" );
+		$export_div->appendChild( $self->render_export_data( $orcid_prefix, $user ) );		
+		push @labels,  $self->html_phrase( "export" );
+		push @panels, $export_div;
 
-#		my $items_div = $repo->make_element( "div", class => "orcid_details" );
-#		$items_div->appendChild( $self->render_orcid_data( $orcid_prefix, $user, $entered_orcid ) ) if defined $entered_orcid;		
-#		push @labels,  $self->html_phrase( "public_profile" );
-#		push @panels, $items_div;
-
-#		my $export_div = $repo->make_element( "div", class => "orcid_actions" );
-#		$export_div->appendChild( $self->render_export_data( $orcid_prefix, $user, $entered_orcid ) ) if defined $entered_orcid;		
-#		push @labels,  $self->html_phrase( "export" );
-#		push @panels, $export_div;
-
-#		my $notification_div = $repo->make_element( "div", class => "orcid_actions" );
-#		$notification_div->appendChild( $self->render_action_list( "orcid_actions", {'userid' => $user->get_id} ) );
-#		$notification_div->appendChild( $self->render_action_list( "orcid_management_actions", {'userid' => $user->get_id} ) );
-#		push @labels,  $self->html_phrase( "notification" );
-#		push @panels, $notification_div;
-
+		my $current = 0;
+		$current = $self->{processor}->{reqd_orcid_tab} if $self->{processor}->{reqd_orcid_tab};
 		$f->appendChild( $repo->xhtml->tabs(
 					\@labels,
 					\@panels,
 					basename => "ep_user_orcid_man",
+					current => $current,
 				) );
 
 	}
@@ -676,762 +722,515 @@ sub render_selected_details
 	return $div;
 }
 	
-########################################################################################
-# not yet enabled
-########################################################################################
-#sub render_orcid_data
-#{
-#	my( $self, $orcid_prefix, $user, $orcid ) = @_;
-#
-#	my $repo = $self->{repository};
-#	my $xml = $repo->xml;
-#
-#	my @labels;
-#	my @panels;
-#
-#        my $profile_div = $repo->make_element( "div" );
-#        my $h3_2 = $profile_div->appendChild( $repo->make_element( "h3" ) );
-#	$h3_2->appendChild( $self->html_phrase( "profile" ) );
-#
-#	my $read_profile_plugin = $repo->plugin( "Orcid::ReadProfile" ); 
-#	$self->read_and_render_orcid_data( $profile_div, $read_profile_plugin, $user, $orcid, "orcid-profile", "render_orcid_profile" );
-#
-#	my %read_button = ( 
-#		read_profile => $self->phrase( "action:read_profile:title" ),
-#		revoke_read_profile => $self->phrase( "action:revoke:title" ),
-#                _order=>[ "read_profile", "revoke_read_profile" ],
-#                _class=>"ep_form_button_bar"
-#        );
-#
-#	$profile_div->appendChild( $repo->render_action_buttons( %read_button ) );
-#	push @labels,  $self->html_phrase( "profile" );
-#	push @panels, $profile_div;
-#
-#        my $bio_div = $repo->make_element( "div" );
-#        my $h3_3 = $bio_div->appendChild( $repo->make_element( "h3" ) );
-#	$h3_3->appendChild( $self->html_phrase( "bio" ) );
-#
-#	my $read_bio_plugin = $repo->plugin( "Orcid::ReadBio" ); 
-#	$self->read_and_render_orcid_data( $bio_div, $read_bio_plugin, $user, $orcid, "orcid-bio", "render_orcid_bio" );
-#
-#	my %bio_button = ( read_bio => $self->phrase( "action:read_bio:title" ),
-#		revoke_read_bio => $self->phrase( "action:revoke:title" ),
-#                _order=>[ "read_bio", "revoke_read_bio" ],
-#                _class=>"ep_form_button_bar"
-#         );
-#
-#	$bio_div->appendChild( $repo->render_action_buttons( %bio_button ) );
-#	push @labels,  $self->html_phrase( "bio" );
-#	push @panels, $bio_div;
-#
-#
-#        my $works_div = $repo->make_element( "div" );
-#        my $h3_4 = $works_div->appendChild( $repo->make_element( "h3" ) );
-#	$h3_4->appendChild( $self->html_phrase( "works" ) );
-#
-##	my $read_works_plugin = $repo->plugin( "Orcid::ReadResearch" ); 
-##	$self->read_and_render_orcid_data( $works_div, $read_works_plugin, $user, $orcid, "orcid-works", "render_orcid_works" );
-#
-#	my %works_button = ( read_works => $self->phrase( "action:read_works:title" ),
-#		revoke_read_works => $self->phrase( "action:revoke:title" ),
-#                _order=>[ "read_works", "revoke_read_works" ],
-#                _class=>"ep_form_button_bar"
-#        );
-#
-#	$works_div->appendChild( $repo->render_action_buttons( %works_button ) );
-#	push @labels,  $self->html_phrase( "works" );
-#	push @panels, $works_div;
-#
-#        my $public_div = $repo->make_element( "div" );
-#        my $h3 = $public_div->appendChild( $repo->make_element( "h3" ) );
-#	$h3->appendChild( $self->html_phrase( "public_profile" ) );
-#        $public_div->appendChild( $repo->make_element( "br" ) );
-#
-#	$public_div->appendChild( $repo->xhtml->tabs(
-#					\@labels,
-#					\@panels,
-#					basename => "ep_user_orcid_public_man",
-#				) );
-#
-#
-#	return $public_div;
-#}
 
-########################################################################################
-# not yet enabled
-########################################################################################
-#sub read_and_render_orcid_data
-#{
-#	my( $self, $form, $plugin, $user, $orcid, $tag, $subroutine ) = @_;
-#
-#	my $repo = $self->{repository};
-#	my $xml = $repo->xml;
-#
-#	my $read_granted = $plugin->user_permission_granted( $user );
-#	if ( $read_granted )
-#	{
-#		my $data = $plugin->read_data( $user, $orcid );
-#		if ( $data ) 
-#		{
-#			if (200 == $data->{code} )
-#			{
-#				my $result_xml = EPrints::XML::parse_xml_string( $data->{data} );
-#				my $tag_data = ($result_xml->getElementsByTagName( $tag ))[0];
-#
-#
-##print STDERR "$tag data [". $tag_data->toString()."]\n" if $tag_data;
-#				my $rendered_data = $self->$subroutine( $tag_data );
-#				$form->appendChild( $rendered_data );
-#			}
-#			else
-#			{
-#				$form->appendChild( $xml->create_text_node( "Error code: ".$data->{code} ) );
-#        			$form->appendChild( $repo->make_element( "br" ) );
-#				$form->appendChild( $xml->create_text_node( "Error: ".$data->{error} ) );
-#        			$form->appendChild( $repo->make_element( "br" ) );
-#				$form->appendChild( $xml->create_text_node( "Description: ".$data->{error_description} ) );
-#        			$form->appendChild( $repo->make_element( "br" ) );
-#			}
-#		}
-#	}
-#	else
-#	{
-#		$form->appendChild( $self->html_phrase( "permission_not_granted" ) );
-#	}
-#}
+=begin InternalDoc
 
+=over
 
-########################################################################################
-# not yet enabled
-########################################################################################
-#sub render_orcid_profile
-#{
-#	my( $self, $data ) = @_;
-#
-#	my $repo = $self->{repository};
-#	my $xml = $repo->xml;
-#
-#        my $div = $xml->create_element( "div" );
-#	my $tag_data =  [ 
-#		{
-#			tag => 'orcid-preferences',
-#			phrase => 'orcid-preferences',
-#			call => 'render_tag_details',
-#		},		
-#		{
-#			tag => 'orcid-identifier',
-#			phrase => 'orcid-identifier',
-#			call => 'render_tag_details',
-#		},
-#		{
-#			tag => 'orcid-history',
-#			phrase => 'orcid-history',
-#			call => 'render_tag_details',
-#		},
-#		{
-#			tag => 'orcid-bio',
-#			phrase => 'orcid-bio',
-#			call => 'render_tag_details',
-#		},
-#		{
-#			tag => 'orcid-activities',
-#			phrase => 'orcid-activities',
-#			call => 'render_tag_details',
-#		},
-#	];
-#
-#	foreach my $tag ( @$tag_data )
-#	{
-#		my $tag_contents = ($data->getElementsByTagName( $tag->{tag} ))[0];
-#		$div->appendChild( $self->html_phrase( $tag->{phrase} ) );
-#		my $subroutine = $tag->{call};
-#		$div->appendChild( $self->$subroutine( $tag_contents ) );
-#	}
-#
-#	return $div;
-#}
+=item render_export_data ( $self, $orcid_prefix, $current_user, $orcid )
 
-########################################################################################
-# not yet enabled
-########################################################################################
-#sub render_orcid_bio
-#{
-#	my( $self, $data ) = @_;
-#
-#	my $repo = $self->{repository};
-#	my $xml = $repo->xml;
-#
-#        my $div = $xml->create_element( "div" );
-#
-#	$div->appendChild( $self->html_phrase( 'orcid-bio' ) );
-#	$div->appendChild( $self->render_tag_details( $data ) );
-#
-#	return $div;
-#}
+=back
 
-########################################################################################
-# not yet enabled
-########################################################################################
-#sub render_tag_details
-#{
-#	my( $self, $data ) = @_;
-#
-#	my $repo = $self->{repository};
-#	my $xml = $repo->xml;
-#
-#        my $table = $xml->create_element( "table", class=>"ep_upload_fields ep_multi" );
-#	
-#	if ( $data && $data->hasChildNodes )
-#	{
-#		my @nodes = $data->getChildNodes();
-#		foreach my $node ( @nodes )
-#		{
-#			next unless $node->nodeType() eq XML_ELEMENT_NODE;
-#			my $label = $node->nodeName;
-#			my $value = EPrints::Utils::tree_to_utf8( $node );
-#
-#			$table->appendChild( $self->render_table_row_with_text( $xml, $label, $value ) );
-#		}
-#	}
-#	return $table;
-#}
+This routine renders the export tab. The tab displays the results of searching for
+items in the repository contributed to by the specified ORCID iD. The items found are
+matched to works downloaded from the profile of the specified ORCID iD. If a put_code
+for a work matches a putcode for an item for the user with the OCRID iD then the export
+will be an update rather than a create.
+a checkbox is provided for each item and an export button is provided to initiate the 
+export to the ORCID profile.
 
+If the user is an admin user then an input is provided to allow the user to specifiy 
+an ORCID iD to use for the search and export process. For non admin users the ORCID iD
+used is the one associated with the users account.
 
+=end InternalDoc
 
+=cut
 
-########################################################################################
-# not yet enabled
-########################################################################################
-#sub render_orcid_works
-#{
-#	my( $self, $data, $form ) = @_;
-#
-##print STDERR "render_orcid_works [".$data->toString()."]\n";
-#	my $repo = $self->{session};
-#	my $xml = $repo->xml;
-#
-#        my $div = $xml->create_element( "div" );
-#	return $div unless $data;
-#
-#       	my $table = $div->appendChild( $xml->create_element( "table", class=>"ep_upload_fields ep_multi" ) );
-#	my $import_count = 0;
-#	my @works = $data->getElementsByTagName( "orcid-work" );
-#	foreach my $work ( @works )
-#	{
-#	
-##		my $label = "put-code";
-##		my $value = "-";
-##		my $attributes = $work->attributes();
-##		my $put_code_attr = $attributes->{"NodeMap"}->{'put-code'};
-##		$value = $put_code_attr->value if $put_code_attr; 
-##		$table->appendChild( $self->render_table_row_with_text( $xml, $label, $value, 1 ) );
-#
-#		my $pub_date = ($work->getElementsByTagName('publication-date'))[0];
-#		my $date;
-#		if ( $pub_date )
-#		{
-#			my $pub_year = ($pub_date->getElementsByTagName('year'))[0];
-#			my $pub_month = ($pub_date->getElementsByTagName('month'))[0];
-#			my $pub_day = ($pub_date->getElementsByTagName('day'))[0];
-#			$date = $pub_day ? $pub_day->textContent()."/".$pub_month->textContent()."/".$pub_year->textContent() : "";
-#		}
-#
-#		my $work_title = ($work->getElementsByTagName('work-title'))[0];
-#		my $title = ($work_title->getElementsByTagName('title'))[0]->textContent();
-#		my $sub_title = ($work_title->getElementsByTagName('subtitle'))[0]->textContent() if $work_title->getElementsByTagName('subtitle');
-##		my $work_citation  = ($work->getElementsByTagName('work-citation'))[0];
-##		my $citation  = ($work_citation->getElementsByTagName('citation'))[0]->textContent();
-##		my $citation_format  = ($work_citation->getElementsByTagName('work-citation-type'))[0]->textContent();
-#
-#		my $ext_id_tag  = ($work->getElementsByTagName('work-external-identifiers'))[0];
-#
-#		my @ext_ids  = $ext_id_tag->getElementsByTagName('work-external-identifier');
-#
-#		my $plugin_rank = $repo->config( "orcid_import_plugin_rank" );
-#		my $duplicate = 0;
-#		my $id_type;
-#		my $id;
-#		foreach my $ext_id ( @ext_ids )
-#		{
-#			my $this_id_type  = ($ext_id->getElementsByTagName('work-external-identifier-type'))[0]->textContent();
-#			my $this_id = ($ext_id->getElementsByTagName('work-external-identifier-id'))[0]->textContent();;
-#			if ( $id_type )
-#			{
-#				my $current_rank = $plugin_rank->{uc($id_type)} ? $plugin_rank->{uc($id_type)} : 0;
-#				my $new_rank = $plugin_rank->{uc($this_id_type)} ? $plugin_rank->{uc($this_id_type)} : 0;
-#				if ( $new_rank > $current_rank )
-#				{	
-#					$id_type = $this_id_type;
-#					$id = $this_id;
-#				}
-#			}
-#			else
-#			{
-#				$id_type = $this_id_type;
-#				$id = $this_id;
-#			}
-#print STDERR "id_type is [$id_type] this[$this_id_type]\n";
-#			$duplicate++ if $self->is_duplicate ( $this_id_type, $this_id );
-#			last if $duplicate;
-#
-#		}
-#		if ( $duplicate )
-#		{
-#			$table->appendChild( $self->render_works_table_row_with_tick( $xml, "Title", $title ) );
-#		}
-#		else 
-#		{		
-#                       	$table->appendChild( $self->render_works_table_row_with_import( $xml, "Title", $title, $id_type, $id, $import_count++ ) );
-#		}
-#		$table->appendChild( $self->render_works_table_row( $xml, "Subtitle", $sub_title ) );
-#		$table->appendChild( $self->render_works_table_row( $xml, "Date", $date ) );
-#		$table->appendChild( $self->render_works_table_row( $xml, "IDs", EPrints::Utils::tree_to_utf8( $ext_id_tag ) ) );
-##		$table->appendChild( $self->render_table_row_with_text( $xml, "Citation Format", $citation_format ) );
-##		$table->appendChild( $self->render_table_row_with_import( $xml, "Citation", $citation, $citation_format, $citation, $import_count++ ) );
-#	}
-#
-##	$div->appendChild( $self->render_tag_details( $data ) );
-#	return $div;
-#}
+sub render_export_data
+{
+	my( $self, $orcid_prefix, $current_user ) = @_;
 
-########################################################################################
-# not yet enabled
-########################################################################################
-#sub render_works_table_row
-#{
-#	my( $self, $xml, $label, $value, $first ) = @_;
-#	my $tr = $xml->create_element( "tr", style=>"width: 100%" );
-#	my $first_class = "";
-#	$first_class = "_first" if $first;
-#	my $td1 = $tr->appendChild( $xml->create_element( "td", class=>"ep_orcid_works_label".$first_class ) );
-#	my $td2 = $tr->appendChild( $xml->create_element( "td", class=>"ep_orcid_works_value".$first_class ) );
-#	$td1->appendChild( $xml->create_text_node( $label ) );
-#	$td2->appendChild( $xml->create_text_node( $value ) );
-#
-#	return $tr;
-#}
-########################################################################################
-# not yet enabled
-########################################################################################
-#sub render_works_table_row_with_tick
-#{
-#	my( $self, $xml, $label, $value, $first ) = @_;
-#	my $tr = $xml->create_element( "tr", style=>"width: 100%" );
-#	my $first_class = "";
-#	$first_class = "_first" if $first;
-#	my $td1 = $tr->appendChild( $xml->create_element( "td", class=>"ep_orcid_works_label".$first_class ) );
-#	my $td2 = $tr->appendChild( $xml->create_element( "td", class=>"ep_orcid_works_value".$first_class ) );
-#	my $td3 = $tr->appendChild( $xml->create_element( "td", class=>"ep_orcid_works_link".$first_class, rowspan=>"4" ) );
-#	$td1->appendChild( $xml->create_text_node( $label ) );
-#	$td2->appendChild( $xml->create_text_node( $value ) );
-#	my $tick_div = $xml->create_element( "div", class=>"ep_form_button_bar" ); 
-#	my $tick = $tick_div->appendChild( $xml->create_element( "img", width=>32, height=>32, src=>"/style/images/tick.png" ) );
-#	$td3->appendChild( $tick_div );
-#
-#	return $tr;
-#}
+	my $repo = $self->{repository};
+	my $xml = $repo->xml;
 
-########################################################################################
-# not yet enabled
-########################################################################################
-#sub render_works_table_row_with_import
-#{
-#	my( $self, $xml, $label, $value, $import_type, $import_value, $import_count, $first ) = @_;
-#
-#	my $repo = $self->{repository};
-#
-#	my $tr = $xml->create_element( "tr", style=>"width: 100%" );
-#	my $first_class = "";
-#	$first_class = "_first" if $first;
-#	my $td1 = $tr->appendChild( $xml->create_element( "td", class=>"ep_orcid_works_label".$first_class ) );
-#	my $td2 = $tr->appendChild( $xml->create_element( "td", class=>"ep_orcid_works_value".$first_class ) );
-#	my $td3 = $tr->appendChild( $xml->create_element( "td", class=>"ep_orcid_works_link".$first_class, rowspan=>"4" ) );
-#	$td1->appendChild( $xml->create_text_node( $label ) );
-#	$td2->appendChild( $xml->create_text_node( $value ) );
-#	
-#	my $plugin_map = $repo->config( "orcid_import_plugin_map" );
-#	my $import_plugin = $plugin_map->{ uc($import_type) };
-#
-#print STDERR "using import plugin [$import_type] [$import_plugin]\n";
-#	my $action_name = "import_work_".$import_count;
-#	my $div = $xml->create_element( "div", class=>"ep_form_button_bar" ); 
-#
-#	my $button = $div->appendChild( $xml->create_element( "input", 
-#		type=>"submit", 
-#		name=> "_action_".$action_name, 
-#		value=>$self->phrase( "action:import_work:title" ) ) );
-#	if ( $import_plugin )
-#	{
-#		$div->appendChild( $repo->render_hidden_field ( $action_name."_format", $import_plugin ) );
-#		$div->appendChild( $repo->render_hidden_field ( $action_name."_data", $import_value ) );
-#	}
-#	else
-#	{
-#		$button->setAttribute( "disabled", "disabled" ) unless $import_plugin;
-#	}
-#	$td3->appendChild( $div );
-#	return $tr;
-#}
+	my $orcid = $current_user->get_value( "orcid" );
 
+       	my $works_div = $repo->make_element( "div" );
+	my $div = $works_div->appendChild( $xml->create_element( "div", class=>"orcid_connect" ) );
+	my $text_div = $div->appendChild( $xml->create_element( "div", class=>"orcid_connect_text" ) );
+	my $input_div = $div->appendChild( $xml->create_element( "div", class=>"orcid_connect_input" ) );
+	my $btn_div = $div->appendChild( $xml->create_element( "div", class=>"orcid_connect_btn" ) );
 
-########################################################################################
-# not yet enabled
-########################################################################################
-#sub render_table_row
-#{
-#	my( $self, $xml, $label, $value, $link, $first ) = @_;
-#	my $tr = $xml->create_element( "tr", style=>"width: 100%" );
-#	my $first_class = "";
-#	$first_class = "_first" if $first;
-#	my $td1 = $tr->appendChild( $xml->create_element( "td", class=>"ep_orcid_works_label".$first_class ) );
-#	my $td2 = $tr->appendChild( $xml->create_element( "td", class=>"ep_orcid_works_value".$first_class ) );
-#	my $td3 = $tr->appendChild( $xml->create_element( "td", class=>"ep_orcid_works_link".$first_class ) );
-#	$td1->appendChild( $label );
-#	$td2->appendChild( $value );
-#	$td3->appendChild( $link );
-#
-#	return $tr;
-#}
+	# check permissions before allowing override
+	if ( $current_user->allow( 'orcid/admin' ) )
+	{  
+		# override the user ORCID iD and provide a search button
+		my $orcid_to_search = $self->{processor}->{orcid_to_search};
+		$orcid = $orcid_to_search if $orcid_to_search;
 
-########################################################################################
-# not yet enabled
-########################################################################################
-#sub render_table_row_with_text
-#{
-#	my( $self, $xml, $label_val, $value_val, $first ) = @_;
-#
-#	my $label = $xml->create_text_node( $label_val );
-#	my $value = $xml->create_text_node( $value_val );
-#	my $link = $xml->create_text_node( "" );
-#	return $self->render_table_row( $xml, $label, $value, $link, $first );
-#}
+                $text_div->appendChild( $self->html_phrase( "export_help_admin" ) );
+		$input_div->appendChild( $xml->create_element( "input",
+			value => $orcid,
+			type => 'text',
+			size => 20,
+			id => $orcid_prefix.'_search_orcid',
+			name => $orcid_prefix.'_search_orcid',
+		) );
 
+		my $btn = { search => $self->html_phrase( "search_btn:title" ),
+			    _class=>"ep_form_button_bar"  };
+		$btn_div->appendChild( $repo->render_action_buttons( %$btn ) );
+	}
+	else
+	{
+                $text_div->appendChild( $self->html_phrase( "export_help" ) );
+		my $btn = { search => $self->html_phrase( "search_btn:title" ),
+			    _class=>"ep_form_button_bar"  };
+		$btn_div->appendChild( $repo->render_action_buttons( %$btn ) );
+	}
+	my $ds = $repo->dataset("archive"); 
+	my $current_items = $ds->search(
+		satisfy_all => 0,
+		filters =>  [
+			{ meta_fields => [ 
+				'contributors_orcid', 
+				'creators_orcid' , 
+				'editors_orcid'  
+				], 
+			  value => $orcid, match=>'EQ', merge => 'ANY' },
+		],
+	);
 
-########################################################################################
-# not yet enabled
-########################################################################################
-#sub render_table_row_with_link
-#{
-#	my( $self, $xml, $label_val, $value_val, $link_val ) = @_;
-#
-#	my $label = $xml->create_text_node( $label_val );
-#	my $value = $xml->create_element( "a", href=>$link_val, target=>"_blank" );
-#	$value->appendChild( $xml->create_text_node( $value_val ) );
-#	my $link = $xml->create_text_node( "" );
-#	return $self->render_table_row( $xml, $label, $value, $link );
-#}
+        my $h3_4 = $works_div->appendChild( $repo->make_element( "h3" ) );
+	$h3_4->appendChild( $self->html_phrase( "works" ) );
+
+	unless ( $current_items && $current_items->count )
+	{
+		$works_div->appendChild( $self->html_phrase( "export_error:no_items" ) );
+		return $works_div;
+	}
+
+	my $current_works = $repo->call( "get_works_for_orcid", $repo, $orcid );
+	unless ( $current_works )
+	{
+		$self->{processor}->add_message( "warning", 
+			 $self->html_phrase( "orcid_api_error_undef",
+				id =>$repo->make_text($orcid) ) );
+		return $works_div;
+	}
+	unless ( $current_works->{code} )
+	{
+		$self->{processor}->add_message( "warning", 
+			 $self->html_phrase( "orcid_api_error_undef",
+				id =>$repo->make_text($orcid) ) );
+		return $works_div;
+	}
+	if ( 200 != $current_works->{code} )
+	{
+		eval {
+			my $code = $current_works->{code};
+			my $json_vars = JSON::decode_json($current_works->{data});
+			my $error_name = $json_vars->{'user-message'};
+			my $error_desc = $json_vars->{'more-info'};
+			$self->{processor}->add_message( "warning", 
+				 $self->html_phrase( "orcid_api_error", 
+					id =>$repo->make_text($orcid),
+					code =>$repo->make_text($code),
+					err =>$repo->make_text($error_name),
+					desc =>$repo->make_text($error_desc),
+ 			) );
+		};
+		$self->{processor}->add_message( "warning", $self->html_phrase( "unknown_orcid_api_error",) ) if $@;
+		return $works_div;
+	}
+	
+	my $user_ds = $repo->dataset( "user" );
+	my $user = $user_ds->dataobj( $current_works->{user} );
+	unless ( $user && $orcid eq $user->get_value( "orcid" ) )
+	{
+		$works_div->appendChild( $self->html_phrase( "export_error:no_user" ) );
+		return $works_div;
+	}
+	unless( $current_user->allow( 'orcid/admin' ) )
+	{
+		if ( $current_works->{user} != $current_user->get_id )
+		{
+			$works_div->appendChild( $self->html_phrase( "export_error:wrong_user" ) );
+			return $works_div;
+		}
+	}
+
+	# check This user has given permission
+	my $act_u_token = $user->get_value( 'orcid_act_u_token' );
+	unless ( $act_u_token )
+	{
+		$works_div->appendChild( $self->html_phrase( "export_error:no_user_permission" ) );
+		return $works_div;
+	}
+
+	my $put_codes = $user->get_value( 'put_codes' ); 
+	my $relevant_codes = [];
+	foreach my $code ( @$put_codes )
+	{
+		if ( $code->{'code_type'} eq 'work' )
+		{
+			push @$relevant_codes, $code;
+		}
+	}
+
+	if( defined $current_items && $current_works )
+	{
+		eval {
+			my $works_data = JSON::decode_json( $current_works->{data} );
+			$works_div->appendChild( $self->render_results( 
+					$orcid_prefix, 
+					$orcid, 
+					$user->get_id(),
+					$act_u_token, 
+					$current_items, 
+					$works_data, 
+					$relevant_codes ) );
+		};
+		$self->{processor}->add_message( "warning", $self->html_phrase( "unknown_orcid_api_error",) ) if $@;
+	}
+
+	return $works_div;
+}
+
+=begin InternalDoc
+
+=over
+
+=item render_results
+
+=back
+
+This method displays the list of items that could potentially be exported to the ORCID profile for the supplied ORCID iD. 
+A checkbox and export button are provided to allow the user to export selected works
+
+=end InternalDoc
+
+=cut
+
+sub render_results
+{
+	my( $self, $orcid_prefix, $orcid, $user_id, $token, $items, $works, $put_codes ) = @_;
+
+	my $repo = $self->{repository};
+	my $xml = $repo->xml;
+	my $xhtml = $repo->xhtml;
+
+	my $offset = $self->{processor}->{offset};
+
+	my $form = $self->render_form;
+	$form->setAttribute( class => "import_single" );
+	$form->appendChild( $xhtml->hidden_field( data => $self->{processor}->{data} ) );
+	$form->appendChild( $xhtml->hidden_field( results_offset => $offset ) );
+	
+	my $total = $items->count;
+	$total = 1000 if $total > 1000;
+
+	my $ds = $repo->dataset( "archive" );
+	my $i = 0;
+	my $list = EPrints::Plugin::Screen::Import::OrcidWork::List->new(
+		session => $repo,
+		dataset => $ds,
+		ids => [0 .. ($total - 1)],
+		items => {
+				map { ($offset + $i++) => $_ } @{$items->ids}
+			}
+		);
+
+	$form->appendChild( EPrints::Paginate->paginate_list(
+		$repo, "results", $list,
+		container => $xml->create_element( "table", class => "table" ),
+		params => {
+			$self->hidden_bits,
+			data => $self->{processor}->{data},
+			_action_test_data => 1,
+		},
+		render_result => sub {
+			my( undef, $item_id, undef, $n ) = @_;
+			my $item = $ds->dataobj( $item_id );
+			return unless $item;
+
+			my $export = $self->find_exports( $item, $works, $put_codes  );
+
+			my $tr = $xml->create_element( "tr" );
+			my $num_td = $tr->appendChild( $xml->create_element( "td" ) );
+			my $item_td = $tr->appendChild( $xml->create_element( "td" ) );
+			$num_td->appendChild( $xml->create_text_node( $n ) );
+			$item_td->appendChild( $self->html_phrase( "results_title" ) );
+			$item_td->appendChild( $xml->create_text_node( $item->get_value('title') ) );
+			$item_td->appendChild( $xml->create_element( "br" ) );
+			$item_td->appendChild( $self->html_phrase( "results_type" ) );
+			my $item_type = $item->get_value( 'type' ); 
+			$item_td->appendChild( $repo->html_phrase("eprint_typename_".$item_type ) );
+			$item_td->appendChild( $xml->create_element( "br" ) );
+			$item_td->appendChild( $self->html_phrase( "results_ids" ) );
+			my $doi = $item->get_value( "doi" );
+			my $pmid = $item->get_value( "pubmed_id" );
+			if ( $doi )
+			{
+				$item_td->appendChild( $xml->create_text_node( $doi ) );
+			}
+			else
+			{
+				$item_td->appendChild( $self->html_phrase( "results_no_id" ) );
+			}
+			$item_td->appendChild( $xml->create_text_node( " / " ) );
+			if ( $pmid )
+			{
+				$item_td->appendChild( $xml->create_text_node( $pmid ) );
+			}
+			else
+			{
+				$item_td->appendChild( $self->html_phrase( "results_no_id" ) );
+			}
+
+			if ( $export )
+			{
+				$item_td->appendChild( $xml->create_element( "br" ) );
+				$item_td->appendChild( $self->html_phrase( "exists_on_profile" ) );
+				$item_td->appendChild( $xml->create_element( "br" ) );
+				$item_td->appendChild( $self->html_phrase( "export_source" ) );
+				if ( $export->{source} )
+				{
+					$item_td->appendChild( $xml->create_text_node( $export->{source} ) );
+				}
+				else
+				{
+					$item_td->appendChild( $self->html_phrase( "export_no_source" ) );
+				}
+				if ( $export->{title} )
+				{
+					$item_td->appendChild( $xml->create_element( "br" ) );
+					$item_td->appendChild( $self->html_phrase( "export_title" ) );
+					$item_td->appendChild( $xml->create_text_node( $export->{title} ) );
+				}
+				if ( $export->{doi} )
+				{
+					$item_td->appendChild( $xml->create_element( "br" ) );
+					$item_td->appendChild( $self->html_phrase( "export_doi" ) );
+					$item_td->appendChild( $xml->create_text_node( $export->{doi} ) );
+				}
+	
+				if ( $export->{pmid} )
+				{
+					$item_td->appendChild( $xml->create_element( "br" ) );
+					$item_td->appendChild( $self->html_phrase( "export_pmid" ) );
+					$item_td->appendChild( $xml->create_text_node( $export->{pmid} ) );
+				}
+	
+			}
+	
+			my $cb_td = $tr->appendChild( $xml->create_element( "td" ) );
+			my $cb_value = $item->get_id();
+			if ( $export && $export->{put_code} )
+			{
+				$cb_value .= "_".$export->{put_code};
+			}
+			my $cb = $cb_td->appendChild( $xml->create_element(
+				"input",
+				name => $orcid_prefix.'_export_code',
+				value => $cb_value,
+				type => "checkbox",
+			) );
+			if ( $export && $export->{put_code} )
+			{
+				$cb_td->appendChild( $self->html_phrase( "export_update" ) );
+			}
+
+			return $tr;
+		},
+	) );
+
+        $form->appendChild( $repo->render_hidden_field ( $orcid_prefix."_export_to_orcid", $orcid ) );
+        $form->appendChild( $repo->render_hidden_field ( $orcid_prefix."_act_update_token", $token ) );
+        $form->appendChild( $repo->render_hidden_field ( $orcid_prefix."_act_update_user_id", $user_id ) );
+	$form->appendChild( $repo->render_action_buttons( export_data => $self->phrase( "action_export_data" ), ) );
+	
+	return $form;
+}
+
+=begin InternalDoc
+
+=over
+
+=item find_exports
+
+=back
+
+This method looks up the put_code, doi, pmid or title of the item in the works data obtained from 
+the ORCID Registry to identify if this user has already exported it.
+
+=end InternalDoc
+
+=cut
+
+sub find_exports
+{
+	my( $self, $item, $works, $put_codes ) = @_;
+
+	my $export = {};
+	my $match_found = 0;
+	my $put_code;
+	foreach my $code ( @$put_codes )
+	{
+		if ( $code->{item} && $code->{item} eq $item->get_id() )
+		{
+			$put_code = $code->{code};
+		}
+	}
+	my $item_doi = $item->get_value( "doi" );
+	my $item_pmid = $item->get_value( "pubmed_id" );
+	my $item_title = $item->get_value( "title" );
+
+	my $groups = $works->{group};
+	foreach my $group ( @$groups )
+	{
+		my $summary = $group->{'work-summary'};
+                foreach my $ws ( @$summary )
+                {
+			my $doi;
+			my $pmid;
+			if ( $ws->{'external-ids'} && $ws->{'external-ids'}->{'external-id'} )
+			{
+				foreach my $ext_id ( @{$ws->{'external-ids'}->{'external-id'}} )
+				{
+					my $id_type = $ext_id->{'external-id-type'};
+					my $id_val = $ext_id->{'external-id-value'};
+					$doi = $id_val if $id_type eq 'doi';
+					$pmid = $id_val if $id_type eq 'pmid';
+				}
+			}
+				
+			my $code = $ws->{'put-code'};;
+			my $source = $ws->{'source'}->{'source-name'}->{value}
+                                             if $ws->{'source'} && 
+						$ws->{'source'}->{'source-name'} && 
+						$ws->{'source'}->{'source-name'}->{value};
+			my $title = $ws->{title}->{title}->{value}
+                                             if $ws->{title} && 
+						$ws->{title}->{title} && 
+						$ws->{title}->{title}->{value};
+			if ( $code && $put_code && $code eq $put_code )
+			{
+				$export->{put_code} = $code;
+				$export->{source} = $source if $source;
+				$export->{title} = $title if $title;
+				$export->{doi} = $doi if $doi;
+				$export->{pmid} = $pmid if $pmid;
+				$match_found++;
+			}  
+			elsif ( $doi && $item_doi && $doi eq $item_doi )
+			{
+				$export->{source} = $source if $source;
+				$export->{title} = $title if $title;
+				$export->{doi} = $doi if $doi;
+				$export->{pmid} = $pmid if $pmid;
+				$match_found++;
+			}
+			elsif ( $pmid && $item_pmid && $pmid eq $item_pmid )
+			{
+				$export->{source} = $source if $source;
+				$export->{title} = $title if $title;
+				$export->{doi} = $doi if $doi;
+				$export->{pmid} = $pmid if $pmid;
+				$match_found++;
+			}
+			elsif ( $title && $item_title && $title eq $item_title )
+			{
+				$export->{source} = $source if $source;
+				$export->{title} = $title if $title;
+				$export->{doi} = $doi if $doi;
+				$export->{pmid} = $pmid if $pmid;
+				$match_found++;
+			}
+		}
+	}
+
+	return $export if $match_found;
+	return undef;
+}
 
 
+=begin InternalDoc
 
-########################################################################################
-# not yet enabled
-########################################################################################
-#sub is_duplicate
-#{
-#	my ( $self, $type, $value ) = @_;
-#	my $repo = $self->{repository};
-#	my $ds = $repo->dataset("eprint");
-#print STDERR "OrcidManager::is_duplicate [$type] [$value] \n";
-#
-#	my $searchexp = $ds->prepare_search( satisfy_all => 0 );
-#	foreach my $fn ( qw/ item_doi_field item_pmid_field / )
-#	{
-#		my $id_field = $repo->config( $fn );
-#		$searchexp->add_field(
-#			fields => [ $ds->field( $id_field ) ],
-#			value  => $value,
-#			match  => "EQ",
-#		);
-#	}
-#
-#	my $list = $searchexp->perform_search;
-#	
-#print STDERR "OrcidManager::is_duplicate [$type] [$value] returning [".$list->count."]\n";
-#	return $list->count;
-#}
+=over
 
-########################################################################################
-# not yet enabled
-########################################################################################
-#sub import_work
-#{
-#	my( $self, $plugin_id, $data, ) = @_;
-#
-#	my $repo = $self->{repository};
-#	my $plugin = $repo->plugin( "Import::".$plugin_id );
-#
-#	return unless $plugin;
-#	my $data_file = $data;
-#
-#	my $data_fh = new FileHandle("echo \'$data_file\' |") or die;
-#
-#	$plugin->set_handler( $self );
-#	my %opts = ( fh=>$data_fh, dataset=>$repo->dataset("inbox") );
-#	my $list = $plugin->input_text_fh( %opts );
-#	return $list;
-#}
+=item export_work
 
-########################################################################################
-# not yet enabled
-########################################################################################
-#sub message
-#{
-#	my( $self, $type, $msg ) = @_;
-#
-#	unless( $self->{quiet} )
-#	{
-#		$self->{processor}->add_message( $type, $msg );
-#	}
-#}
+=back
 
-########################################################################################
-# not yet enabled
-########################################################################################
-#sub epdata_to_dataobj
-#{
-#print STDERR "OrcidManager::epdata_to_dataobj called !!!!!!!!!!!!!!!!!!!\n";
-#	my( $self, $epdata, %opts ) = @_;
-#	$self->{parsed}++;
-#
-#	return if $self->{dryrun};
-#
-#	my $dataset = $opts{dataset};
-#	if( $dataset->base_id eq "eprint" )
-#	{
-#		my $user = $self->{repository}->current_user;
-#		$epdata->{userid} = $user->get_id;
-#		$epdata->{eprint_status} = "inbox";
-#	}	
-#
-#	$self->{wrote}++;
-#
-#	return $dataset->create_dataobj( $epdata );
-#}
+This method forms and sends the xml for exporting an item to the ORCID 
+Registry. The export may be a create or update depending upon the 
+existence of a put code. The item is exported to the profile for the 
+supplied ORCID iD  
 
-########################################################################################
-# not yet enabled
-########################################################################################
-#sub render_export_data
-#{
-#	my( $self, $orcid_prefix, $user, $orcid ) = @_;
-#
-#	my $repo = $self->{repository};
-#	my $xml = $repo->xml;
-#
-#       my $works_div = $repo->make_element( "div" );
-#        my $h3_4 = $works_div->appendChild( $repo->make_element( "h3" ) );
-#	$h3_4->appendChild( $self->html_phrase( "works" ) );
-#
-#	my $users_eprints = $user->owned_eprints_list();
-#	unless ( $users_eprints && $users_eprints->count )
-#	{
-#		$works_div->appendChild( $xml->create_text_node( "No items found" ) );
-#		return $works_div;
-#	}
-#
-#	my $orcid_work_ids = {};
-#	my $read_works_plugin = $repo->plugin( "Orcid::ReadResearch" ); 
-#	if ( $read_works_plugin->user_permission_granted( $user ) )
-#	{
-#		my $data = $read_works_plugin->read_data( $user, $orcid );
-#		if ( $data ) 
-#		{
-#			if (200 == $data->{code} )
-#			{
-#				my $result_xml = EPrints::XML::parse_xml_string( $data->{data} );
-#				my $tag_data = ($result_xml->getElementsByTagName( "orcid-works" ))[0] if $result_xml;
-#				my @works = $tag_data->getElementsByTagName( "orcid-work" ) if $tag_data;
-#				foreach my $work ( @works )
-#				{
-#	
-#					#my $work_title = ($work->getElementsByTagName('work-title'))[0];
-#					#my $title = ($work_title->getElementsByTagName('title'))[0]->textContent();
-#					my $ext_id_tag  = ($work->getElementsByTagName('work-external-identifiers'))[0];
-#					my @ext_ids  = $ext_id_tag->getElementsByTagName('work-external-identifier');
-#					foreach my $ext_id ( @ext_ids )
-#					{
-#						my $this_id = ($ext_id->getElementsByTagName('work-external-identifier-id'))[0]->textContent();;
-#						$orcid_work_ids->{$this_id}++;
-#					}
-#				}
-#			}
-#			else
-#			{
-#				$works_div->appendChild( $xml->create_text_node( "Error code: ".$data->{code} ) );
-#        			$works_div->appendChild( $repo->make_element( "br" ) );
-#				$works_div->appendChild( $xml->create_text_node( "Error: ".$data->{error} ) );
-#        			$works_div->appendChild( $repo->make_element( "br" ) );
-#				$works_div->appendChild( $xml->create_text_node( "Description: ".$data->{error_description} ) );
-#        			$works_div->appendChild( $repo->make_element( "br" ) );
-#			}
-#
-#		}
-#	}
-#	else
-#	{
-#		$works_div->appendChild( $self->html_phrase( "permission_not_granted" ) );
-#	}
-#
-#        my $table = $works_div->appendChild( $xml->create_element( "table", class=>"ep_upload_fields ep_multi" ) );
-#	$users_eprints->map( sub {
-#		my ( $repo, $dataset, $eprint ) = @_;
-#		if ( $eprint->value( "eprint_status" ) eq "archive" )
-#		{
-#			my $uploaded = 0;
-#			foreach my $id_field_name ( qw\ item_doi_field item_pmid_field \ )
-#			{
-#				my $id_field = $repo->config( $id_field_name );
-#				if ( $id_field )
-#				{
-#					my $id = $eprint->get_value( $id_field );
-#					$uploaded++ if $id && $orcid_work_ids->{$id};
-#print STDERR "check id field[$id_field] value[$id] uploaded[$uploaded]\n";
-#				}
-#			}	
-#			my $ep_title = $eprint->value( "title" ); #->[0]->{text};
-#			$ep_title = $ep_title->[0]->{text} if ( ref $ep_title eq "ARRAY" );
-#			if ( $uploaded )
-#			{
-#				$table->appendChild( $self->render_table_row_with_tick( $xml, "Title", $ep_title, 1, $user->get_id, $eprint->get_id ) );
-#			}
-#			else
-#			{
-#				$table->appendChild( $self->render_table_row_with_export( $xml, "Title", $ep_title, 1, $user, $eprint->get_id ) );
-#			}
-#		}
-#	});
-#
-#	my %add_button = ( 
-#		create_works => $self->phrase( "action:create_works:title" ),
-#		revoke_create_works => $self->phrase( "action:revoke:title" ),
-#                _order=>[ "create_works", "revoke_create_works" ],
-#                _class=>"ep_form_button_bar"
-#        );
-#
-#	$works_div->appendChild( $repo->render_action_buttons( %add_button ) );
-#	
-#	
-#print STDERR "Export got ids [".Data::Dumper::Dumper($orcid_work_ids)."]\n";
-#	return $works_div;
-#}
+=end InternalDoc
 
-########################################################################################
-# not yet enabled
-########################################################################################
-#sub render_table_row_with_export
-#{
-#	my( $self, $xml, $label_val, $value_val, $first, $user, $item_id ) = @_;
-#
-#	my $repo = $self->{repository};
-#
-#	my $label = $xml->create_text_node( $label_val );
-#	my $value = $xml->create_text_node( $value_val );
-#
-#	my $action_name = "export_work_".$item_id;
-#	my $button = $xml->create_element( "input", 
-#		type => "image", 
-#		src => "/style/images/export.png",
-#		width => 32, 
-#		height => 32,
-#		name => "_action_".$action_name, 
-#		title => $self->phrase( "action:export_work:title" ), 
-#		alt => $self->phrase( "action:export_work:title" ), 
-#	);
-#	my $works_plugin = $repo->plugin( "Orcid::AddWorks" ); 
-#	my $add_granted = $works_plugin->user_permission_granted( $user );
-#	if ( !$add_granted )
-#	{
-#		$button->setAttribute( "disabled", "disabled" );
-#		$button->setAttribute( "style", "opacity: 0.4; filter: alpha(opacity=40);" );
-#	}
-#	
-#	#my $auth_url = $repo->config( "orcid_authorise_url" ); 
-#	#$auth_url .= "u".$user_id."i".$item_id."a0";
-##	my $auth_url = $repo->call( "get_orcid_authorise_url", $repo, $user_id, $item_id, "update_works" ); 
-#
-##	my $link = $xml->create_element( "a", href=>$auth_url );
-##	my $tick = $link->appendChild( $xml->create_element( "img", width=>32, height=>32, src=>"/style/images/export.png" ) );
-#	return $self->render_table_row( $xml, $label, $value, $button, $first );
-#}
+=cut
 
-########################################################################################
-# not yet enabled
-########################################################################################
-#sub render_table_row_with_tick
-#{
-#	my( $self, $xml, $label_val, $value_val, $first, $user_id, $item_id ) = @_;
-#
-#	my $repo = $self->{session};
-#
-#	my $label = $xml->create_text_node( $label_val );
-#	my $value = $xml->create_text_node( $value_val );
-#
-#	my $tick = $xml->create_element( "img", width=>32, height=>32, src=>"/style/images/tick.png" );
-#	return $self->render_table_row( $xml, $label, $value, $tick, $first );
-#}
+sub export_work
+{
+	my( $self, $item_id, $orcid_id, $token, $put_code ) = @_;
 
+	my $repo = $self->{repository};
+	my $xml = $repo->xml;
+	return unless $orcid_id;
 
-########################################################################################
-# not yet enabled
-########################################################################################
-#sub export_work
-#{
-#	my( $self, $id ) = @_;
-#print STDERR "############### export_work called for id [$id] ##################\n";	
-#
-#	my $repo = $self->{repository};
-#	my $xml = $repo->xml;
-#	my $user = $repo->current_user;
-#	return unless $user;
-#	my $orcid = $user->get_value( "orcid" );
-#	return unless $orcid;
-#
-#	my $plugin = $repo->plugin( "Orcid::AddWorks" ); 
-#	my $add_granted = $plugin->user_permission_granted( $user );
-#	if ( $add_granted )
-#	{
-#print STDERR "add work token:[$add_granted]\n";
-#		my $work_xml = $repo->call( "form_orcid_work_xml", $repo, $id ); 
-#
-## curl -H 'Content-Type: application/orcid+xml' -H 'Authorization: Bearer aa2c8730-07af-4ac6-bfec-fb22c0987348' -d '@/Documents/new_work.xml' -X POST 'https://api.sandbox.orcid.org/v1.2/0000-0002-2389-8429/orcid-works'
-#
-#		my $add_work_url = $repo->config( "orcid_member_api" );
-#		$add_work_url .= "v1.2/";
-#		$add_work_url .= $orcid;
-#		$add_work_url .= "/orcid-works";
-#
-#		my $req = HTTP::Request->new(POST => $add_work_url, );
-#		$req->header('content-type' => 'application/orcid+xml');
-#		$req->header('Authorization' => 'Bearer '.$add_granted);
-#		 
-#		# add POST data to HTTP request body
-#		$req->content(Encode::encode("utf8", $work_xml));
-#
-#		my $ua = LWP::UserAgent->new;
-#		my $response = $ua->request($req);
-#
+	my $work_xml = $repo->call( "form_orcid_work_xml", $repo, $item_id, $put_code ); 
+	unless ( $work_xml )
+	{
+		$self->{processor}->add_message( "warning", 
+			$self->html_phrase( "export_no_work_xml", item=>$repo->make_text( $item_id )  ) );
+		return;
+	}
+
+	my $url =  $repo->config( "orcid_member_api" ) . 'v' .$repo->config( "orcid_version" ).'/'.$orcid_id.'/work'; 
+
+	my $req;
+        if ( $put_code )
+        {
+                $url .= "/".$put_code;
+                $req = HTTP::Request->new(PUT => $url, );
+        }
+        else
+        {
+                $req = HTTP::Request->new(POST => $url, );
+        }
+
+	$req->header('content-type' => 'application/orcid+xml');
+	$req->header('Authorization' => 'Bearer '.$token);
+		 
+	# add POST data to HTTP request body
+	$req->content(Encode::encode("utf8", $work_xml));
+
+	my $ua = LWP::UserAgent->new;
+	my $response = $ua->request($req);
+
 #print STDERR "\n\n\n\n####### got response [".Data::Dumper::Dumper($response)."]\n\n";
-#
-#		if ( $response->code > 299 )
-#		{
-#
-#			$self->{processor}->add_message( "message",
-#				$self->html_phrase( "orcid_export_error", code=> $xml->create_text_node($response->code) ) );
-#			return 0;
-#		}
-#		else 
-#		{
-#			return 1;
-#		}
-#	}
-#	else
-#	{
-#		$self->{processor}->add_message( "message",
-#				$self->html_phrase( "permission_not_granted", ) );
-#	}
-#
-#	return 0;
-#}
+
+	if ( $response->code > 299 )
+	{
+		$self->{processor}->add_message( "warning",
+			$self->html_phrase( "orcid_export_error", code=> $xml->create_text_node($response->code) ) );
+		return 0;
+	}
+	# a new work was created so get the put_code and return it to the caller.
+	my $put_code_type = "work";
+	if ( $response->code == 201 && 
+	     $response->message() eq 'Created' && 
+	     $response->header("location") =~ /\/$orcid_id\/$put_code_type\/(\d+)$/ )
+	{
+		my $this_code = $1;
+		return ( 1, $this_code ) if $this_code > 1;
+	}
+	
+	return 1;
+}
 
 
 

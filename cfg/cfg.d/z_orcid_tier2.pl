@@ -27,6 +27,11 @@ new permissions for ORCiD
 
 =cut
 
+$c->{roles}->{"orcid_manager"} =
+[
+        "orcid/admin",
+];
+
 $c->{roles}->{"orcid"} =
 [
         "orcid/destroy",
@@ -38,6 +43,7 @@ push @{$c->{user_roles}->{user}}, 'orcid';
 push @{$c->{user_roles}->{submitter}}, 'orcid';
 push @{$c->{user_roles}->{editor}}, 'orcid';
 push @{$c->{user_roles}->{admin}}, 'orcid';
+push @{$c->{user_roles}->{admin}}, 'orcid_manager';
 
 =begin InternalDoc
 
@@ -117,7 +123,6 @@ $c->{user_orcid_id_field} = "orcid";
 $c->{orcid_import_plugin_map} = {
 		"DOI" => "DOI",
 		"PMID" => "PubMedID",
-		"BIBTEX" => "BibTeX",
 };
 
 $c->{orcid_import_plugin_rank} = {
@@ -169,141 +174,20 @@ $c->{put_code_tag_for_endpoint} = {
 };
 
 
-####################################################################################################	
-# Old (V1.0) style activity based mapping for scopes. This is still required as not all of the code
-# has been updated to use the new API
-####################################################################################################	
-$c->{orcid_activity_map} = {
-	authenticate => {
-		scope 		=> "/authenticate",
-		activity_id	=> '01',
-		desc		=> "Retrieve a user's authenticated ORCID iD to store in your system. Redirect to profile",
-		token_type	=> "single",
-		},
-	user_authenticate => {
-		scope 		=> "/authenticate",
-		activity_id	=> '02',
-		desc		=> "Retrieve a user's authenticated ORCID iD to store in your system. Redirect to User orcid management screen",
-		token_type	=> "single",
-		},
-	user_login => {
-		scope 		=> "/authenticate",
-		activity_id	=> '03',
-		desc		=> "Retrieve a user's authenticated ORCID iD to allow login",
-		token_type	=> "single",
-		},
+=begin InternalDoc
 
-	read_record => {
-		scope 		=> "/read-limited",
-		request		=> "orcid-profile",
-		activity_id	=> '01',
-		desc		=> "Retrieve information from a user's ORCID record",
-		token_type	=> "until_revoked",
-		token		=> "orcid_rl_token",
-		},
-	read_bio => {
-		scope 		=> "/read-limited",
-		request		=> "orcid-bio",
-		activity_id	=> '01',
-		desc		=> "Retrieve information from a user's ORCID record",
-		token_type	=> "until_revoked",
-		token		=> "orcid_rl_token",
-		},
-	read_research => {
-		scope 		=> "/read-limited",
-		request		=> "orcid-works",
-		activity_id	=> '01',
-		desc		=> "Retrieve information from a user's ORCID record",
-		token_type	=> "until_revoked",
-		token		=> "orcid_rl_token",
-		},
-	add_works => {
-		scope 		=> "/activities/update",
-		request		=> "/orcid-works",
-		activity_id	=> '01',
-		desc		=> "Add research activities",
-		token_type	=> "until_revoked",
-		token		=> "orcid_act_u_token",
-		},
-	add_identifier => {
-		scope 		=> "/person/update",
-		request		=> "/orcid-bio/external-identifiers",
-		activity_id	=> '01',
-		desc		=> "Create a link between the user's account on your system and their ORCID iD",
-		token_type	=> "until_revoked",
-		token		=> "orcid_bio_u_token",
-		},
-	add_affiliation => {
-		scope 		=> "/affiliations/update",
-		request		=> "/affiliations",
-		activity_id	=> '01',
-		desc		=> "Add an Affiliation",
-		token_type	=> "until_revoked",
-		token		=> "orcid_act_u_token",
-		},
-	add_funding => {
-		scope 		=> "/activities/update",
-		request		=> "/funding",
-		activity_id	=> '01',
-		desc		=> "Add a Funding Source",
-		token_type	=> "until_revoked",
-		token		=> "orcid_act_u_token",
-		},
-	update_bio => {
-		scope 		=> "/orcid-bio/update",
-		request		=> "/orcid-bio",
-		activity_id	=> '01',
-		desc		=> "Update Bio",
-		token_type	=> "until_revoked",
-		token		=> "orcid_bio_u_token",
-		},
-	update_works => {
-		scope 		=> "/activities/update",
-		request		=> "orcid-works",
-		activity_id	=> '01',
-		desc		=> "Update works",
-		token_type	=> "until_revoked",
-		token		=> "orcid_act_u_token",
-		},
-	update_affiliation => {
-		scope 		=> "/activities/update",
-		request		=> "/affiliations",
-		activity_id	=> '01',
-		desc		=> "Update affiliations",
-		token_type	=> "until_revoked",
-		token		=> "orcid_act_u_token",
-		},
-	update_funding => {
-		scope 		=> "/activities/update",
-		request		=> "/funding",
-		activity_id	=> '01',
-		desc		=> "Update funders",
-		token_type	=> "until_revoked",
-		token		=> "orcid_act_u_token",
-		},
-	read_public => {
-		scope 		=> "/read-public",
-		request		=> "/*",
-		activity_id	=> '01',
-		desc		=> "Read Public Info via the member api",
-		token_type	=> "client",
-		token		=> "orcid_read_public_token",
-		},
-	webhook => {
-		scope 		=> "/webhook",
-		request		=> "/webhook",
-		activity_id	=> '01',
-		desc		=> "register a webhook to recieve updates",
-		token_type	=> "client",
-		token		=> "orcid_webhook_token",
-		},
+=over
 
-};
+=item orcid_work_type_map
 
+=back
 
-####################################################################################################	
-# Mapping between ORCID Work types and EPrint types (Not currently required)
-####################################################################################################	
+Mapping between ORCID Work types and EPrint types
+
+=end InternalDoc
+
+=cut
+
 $c->{orcid_work_type_map} = {
 	article => "journal-article",
 	magazine_article => "magazine article",
@@ -387,166 +271,215 @@ $c->{get_orcid_authorise_url} = sub
 
 Utility routine to form the xml for works data 
 
-(not currently required)
-
 =end InternalDoc
 
 =cut
 
 $c->{form_orcid_work_xml} = sub
 {
-        my( $repo, $item_id, ) = @_;
+        my( $repo, $item_id, $put_code ) = @_;
 
 print STDERR "form_orcid_work_xml called\n";
-	my $xml = $repo->xml;
-	my $work_xml = $xml->create_element( "orcid-message", 
-    		'xmlns' => "http://www.orcid.org/ns/orcid",
-    		'xmlns:xsi' => "http://www.w3.org/2001/XMLSchema-instance",
-    		'xsi:schemaLocation' => "https://raw.github.com/ORCID/ORCID-Source/master/orcid-model/src/main/resources/orcid-message-1.2.xsd",
-	);
 	my $ds = $repo->dataset( "eprint" );
 	my $item = $ds->dataobj( $item_id );
 
-	return $work_xml unless $item;
+	return undef unless $item;
 
-	my $version = $work_xml->appendChild( $xml->create_element( "message-version" ) );
-	$version->appendChild( $xml->create_text_node( $repo->config( "orcid_version" ) ) );
-	my $profile = $work_xml->appendChild( $xml->create_element( "orcid-profile" ) );
-	my $activities = $profile->appendChild( $xml->create_element( "orcid-activities" ) );
-	my $works = $activities->appendChild( $xml->create_element( "orcid-works" ) );
-	my $work = $works->appendChild( $xml->create_element( "orcid-work", visibility => "public" ) );
+	my $xml = $repo->xml;
+	my $work_xml = $xml->create_element( "work:work", 
+    		'xmlns:common' => "http://www.orcid.org/ns/common",
+		'xmlns:work' => "http://www.orcid.org/ns/work",
+    		'xmlns:xsi' => "http://www.w3.org/2001/XMLSchema-instance",
+		'xsi:schemaLocation' => "http://www.orcid.org/ns/work /work-2.0.xsd ",
+	);
+
+	if ( $put_code )
+	{
+		$work_xml->setAttribute( "put-code", $put_code );
+	}
+
+	#work:title
 	my $titles = $item->get_value( "title" );
 	if ( $titles )
 	{
-print STDERR "form_orcid_work_xml [". ref($titles)."] [".$titles."]\n";
-		my $w_title = $work->appendChild( $xml->create_element( "work-title" ) );
-		my $title = $w_title->appendChild( $xml->create_element( "title" ) );
+		my $title = $work_xml->appendChild( $xml->create_element( "work:title" ) );
+		my $common_title = $title->appendChild( $xml->create_element( "common:title" ) );
+#print STDERR "form_orcid_work_xml [". ref($titles)."] [".$titles."]\n";
 		if ( ref($titles) eq 'ARRAY' )
 		{
-			$title->appendChild( $xml->create_text_node( $titles->[0]->{text} ) );
+			$common_title->appendChild( $xml->create_text_node( $titles->[0]->{text} ) );
 			if ( scalar @$titles > 1 )
 			{
 				foreach my $trans_title ( @$titles )
 				{
-					my $t_title = $w_title->appendChild( $xml->create_element( "translated-title", 'language-code'=>$trans_title->{lang} ) );
+					my $t_title = $common_title->appendChild( 
+						$xml->create_element( "common:translated-title", 
+								'language-code'=>$trans_title->{lang} ) );
 					$t_title->appendChild( $xml->create_text_node( $trans_title->{text} ) );
 				}
 			}
 		}
 		else
 		{
-			$title->appendChild( $xml->create_text_node( $titles ) );
+			$common_title->appendChild( $xml->create_text_node( $titles ) );
 		}
 	}
+
+	#work:journal-title
+	if ( $item->get_value( "publication" ) )
+	{
+		my $journal_title = $work_xml->appendChild( $xml->create_element( "work:journal-title" ) );
+		$journal_title->appendChild( $xml->create_text_node( $item->get_value( "publication" ) ) );
+	}
+
+	#work:short-description
 	my $abstracts =  $item->get_value( "abstract" );
 	if ( $abstracts )
 	{
-		my $w_abs = $work->appendChild( $xml->create_element( "short-description" ) );
+		my $short_desc = $work_xml->appendChild( $xml->create_element( "work:short-description" ) );
 		if ( ref($abstracts) eq 'ARRAY' )
 		{	
-			$w_abs->appendChild( $xml->create_text_node( $abstracts->[0]->{text} ) );
+			$short_desc->appendChild( $xml->create_text_node( $abstracts->[0]->{text} ) );
 		}
 		else
 		{
-			$w_abs->appendChild( $xml->create_text_node( $abstracts ) );
+			$short_desc->appendChild( $xml->create_text_node( $abstracts ) );
 		}
 	}
 
+	#work:citation
+	my $citation = $work_xml->appendChild( $xml->create_element( "work:citation" ) );
+	my $citation_type = $citation->appendChild( $xml->create_element( "work:citation-type" ) );
+	$citation_type->appendChild( $xml->create_text_node( "formatted-unspecified" ) );
+	my $citation_text = $citation->appendChild( $xml->create_element( "work:citation-value" ) );
+	$citation_text->appendChild( $item->render_citation( "default" ) );
+	
+	#work:type
 	my $work_map = $repo->config( "orcid_work_type_map" );
 	my $orcid_work_type = $work_map->{ $item->get_value( "type" ) };
 	$orcid_work_type = "other" unless $orcid_work_type;
-	my $w_type = $work->appendChild( $xml->create_element( "work-type" ) );
+	my $w_type = $work_xml->appendChild( $xml->create_element( "work:type" ) );
 	$w_type->appendChild( $xml->create_text_node( $orcid_work_type ) );
 
-	if ( $item->get_value( "publication" ) )
-	{
-		my $journal_title = $work->appendChild( $xml->create_element( "journal-title" ) );
-		$journal_title->appendChild( $xml->create_text_node( $item->get_value( "publication" ) ) );
-	}
-	my $e_ids = $work->appendChild( $xml->create_element( "work-external-identifiers" ) );
-	
-	foreach my $id_type ( qw\ eprintid doi pubmed_id \)
-	{
-		next unless $item->get_value( $id_type );
-		my $e_id = $e_ids->appendChild( $xml->create_element( "work-external-identifier" ) );
-		my $e_id_type = $e_id->appendChild( $xml->create_element( "work-external-identifier-type" ) );
-		$e_id_type->appendChild( $xml->create_text_node( "source-work-id" ) ) if $id_type eq "eprintid";
-		$e_id_type->appendChild( $xml->create_text_node( "doi" ) ) if $id_type eq "doi";
-		$e_id_type->appendChild( $xml->create_text_node( "pmid" ) ) if $id_type eq "pubmed_id";
-		my $e_id_id = $e_id->appendChild( $xml->create_element( "work-external-identifier-id" ) );
-		$e_id_id->appendChild( $xml->create_text_node( $item->get_value( $id_type ) ) );
-	}
-
+	#common:publication-date
 	my $date = $item->get_value( "date" );
-	if ( $date )
+	my $date_type = $item->get_value( "date_type" );
+	if ( $date && $date_type && $date_type eq 'published' )
 	{
 		my @parts  = split "-", $date; 
-		my $pub_date = $work->appendChild( $xml->create_element( "publication-date" ) );
-		my $pub_date_yr = $pub_date->appendChild( $xml->create_element( "year" ) );
+		my $pub_date = $work->appendChild( $xml->create_element( "common:publication-date" ) );
+		my $pub_date_yr = $pub_date->appendChild( $xml->create_element( "common:year" ) );
 		$pub_date_yr->appendChild( $xml->create_text_node( $parts[0] ) );
 		if ( $parts[1] )
 		{
-			my $pub_date_mn = $pub_date->appendChild( $xml->create_element( "month" ) );
+			my $pub_date_mn = $pub_date->appendChild( $xml->create_element( "common:month" ) );
 			$pub_date_mn->appendChild( $xml->create_text_node( $parts[1] ) );
+			if ( $parts[2] )
+			{
+				my $pub_date_day = $pub_date->appendChild( $xml->create_element( "common:day" ) );
+				$pub_date_day->appendChild( $xml->create_text_node( $parts[2] ) );
+			}
 		}
 	}
-	my $item_url = $work->appendChild( $xml->create_element( "url" ) );
-	$item_url->appendChild( $xml->create_text_node( $item->get_url() ) );
-	my $language = $item->get_value( "language" );
-	if ( $language )
-	{
-		my $item_lang = $work->appendChild( $xml->create_element( "language-code" ) );
-		$item_lang->appendChild( $xml->create_text_node( $language ) );
-	}
-	#my $item_country = $work->appendChild( $xml->create_element( "country" ) );
-	#$item_country->appendChild( $xml->create_text_node( "US" ) );
-
-	my $citation = $work->appendChild( $xml->create_element( "work-citation" ) );
-	my $citation_type = $citation->appendChild( $xml->create_element( "work-citation-type" ) );
-	$citation_type->appendChild( $xml->create_text_node( "formatted-unspecified" ) );
-	my $citation_text = $citation->appendChild( $xml->create_element( "citation" ) );
-	$citation_text->appendChild( $item->render_citation( "default" ) );
 	
+	#common:external-ids
+	my $ext_ids = $work_xml->appendChild( $xml->create_element( "common:external-ids" ) );
+	
+	foreach my $id_type ( qw\ eprintid doi pubmed_id \)
+	{
+		my $id_val = $item->get_value( $id_type );
+		next unless $id_val;
+		my $id_source;
+		my $id_url;
+		if ( $id_type eq 'eprintid' )
+		{
+			$id_source = "source-work-id";
+			$id_url = $item->get_url();
+		}
+		elsif ( $id_type eq 'doi'  )
+                {
+			$id_source = "doi";
+			my $id_url = "https://doi.org/".$item->get_value( $id_type );
+                }
+		elsif ( $id_type eq 'pubmed_id'  )
+                {
+			$id_source = "pmid";
+			my $id_url = "https://www.ncbi.nlm.nih.gov/pubmed/".$item->get_value( $id_type );
+                }
+		my $ext_id = $ext_ids->appendChild( $xml->create_element( "common:external-id" ) );
+		my $ext_id_type = $ext_id->appendChild( $xml->create_element( "common:external-id-type" ) );
+                $ext_id_type->appendChild( $xml->create_text_node( $id_source ) );
+		my $ext_id_val = $ext_id->appendChild( $xml->create_element( "common:external-id-value" ) );
+		$ext_id_val->appendChild( $xml->create_text_node( $id_val ) );
+		my $ext_id_url = $ext_id->appendChild( $xml->create_element( "common:external-id-url" ) );
+		$ext_id_url->appendChild( $xml->create_text_node( $id_url ) );
+                my $ext_id_rel = $ext_id->appendChild( $xml->create_element( "common:external-id-relationship" ) );
+                $ext_id_rel->appendChild( $xml->create_text_node( "self" ) );
+	}
+
+	#work:url
+	my $item_url = $work->appendChild( $xml->create_element( "work:url" ) );
+	$item_url->appendChild( $xml->create_text_node( $item->get_url() ) );
+
+	#work:contributors
 	my $contributors = $item->get_value( "contributors" );
 	if ( $contributors )
 	{
 		my $sequence = "first";
-		my $contribs = $work->appendChild( $xml->create_element( "work-contributors" ) );
+		my $contribs = $work->appendChild( $xml->create_element( "work:contributors" ) );
 		foreach my $contributor ( @$contributors )
 		{
 			next unless $contributor;
-			my $contrib = $contribs->appendChild( $xml->create_element( "contributor" ) );
+			my $contrib = $contribs->appendChild( $xml->create_element( "work:contributor" ) );
 			my $c_orcid = $contributor->{ "orcid" };
 			my $c_name = $contributor->{ "name" };
 			my $c_role = $contributor->{ "type" };
 			if ( $c_orcid )
 			{
-				my $contrib_o = $contrib->appendChild( $xml->create_element( "contributor-orcid" ) );
-				my $contrib_o_u = $contrib_o->appendChild( $xml->create_element( "uri" ) );
+				my $contrib_o = $contrib->appendChild( $xml->create_element( "common:contributor-orcid" ) );
+				my $contrib_o_u = $contrib_o->appendChild( $xml->create_element( "common:uri" ) );
+				$contrib_o_u->appendChild( $xml->create_text_node( "http://orcid.org/".$c_orcid ) );
+				my $contrib_o_p = $contrib_o->appendChild( $xml->create_element( "common:path" ) );
 				$contrib_o_u->appendChild( $xml->create_text_node( $c_orcid ) );
+				my $contrib_o_h = $contrib_o->appendChild( $xml->create_element( "common:host" ) );
+				$contrib_o_u->appendChild( $xml->create_text_node( "orcid.org" ) );
 			}
 			if ( $c_name )
 			{
-				my $contrib_n = $contrib->appendChild( $xml->create_element( "credit-name" ) );
+				my $contrib_n = $contrib->appendChild( $xml->create_element( "work:credit-name" ) );
 				my $credit_name = $c_name->{family}.", ".$c_name->{given};
 				$contrib_n->appendChild( $xml->create_text_node( $credit_name ) );
 			}
-			my $contrib_a = $contrib->appendChild( $xml->create_element( "contributor-attributes" ) );
-			my $contrib_s = $contrib_a->appendChild( $xml->create_element( "contributor-sequence" ) );
+			my $contrib_a = $contrib->appendChild( $xml->create_element( "work:contributor-attributes" ) );
+			my $contrib_s = $contrib_a->appendChild( $xml->create_element( "work:contributor-sequence" ) );
 			$contrib_s->appendChild( $xml->create_text_node( $sequence ) );
 			$sequence = "additional";
 			my $the_role = "author";
 			$the_role = "editor" if $c_role eq "EDITOR";
 			$the_role = "chair-or-translator" if $c_role eq "TRANSLATOR";
-			my $contrib_r = $contrib_a->appendChild( $xml->create_element( "contributor-role" ) );
+			my $contrib_r = $contrib_a->appendChild( $xml->create_element( "work:contributor-role" ) );
 			$contrib_r->appendChild( $xml->create_text_node( $the_role ) );
 		}
 
 	}
 
+	#common:language-code
+	my $language = $item->get_value( "language" );
+	if ( $language )
+	{
+		my $item_lang = $work->appendChild( $xml->create_element( "common:language-code" ) );
+		$item_lang->appendChild( $xml->create_text_node( $language ) );
+	}
+	
+	#common:country
+	my $item_country = $work->appendChild( $xml->create_element( "common:country" ) );
+	$item_country->appendChild( $xml->create_text_node( "CH" ) );
+
 	my $prolog = '<?xml version="1.0" encoding="UTF-8"?>'; 
 	my $xml_str = $prolog.$work_xml->toString();
-print STDERR "form_orcid_work_xml [".$xml_str."]\n";
+print STDERR "\nform_orcid_work_xml #####################################################################\n";
+print STDERR Encode::encode("utf8", $xml_str);
+print STDERR "\nform_orcid_work_xml #####################################################################\n";
 	return $xml_str;
 
 };
@@ -762,6 +695,8 @@ $c->{get_works_for_orcid} = sub
 	{
 		$user = $list->item(0);
 		$token = $user->get_value( "orcid_rl_token" );
+		# return if we have a user but no token
+		return undef unless $token;
 	}
 
 	my $url =  $repo->config( "orcid_member_api" ) . 'v' .$repo->config( "orcid_version" ).'/'.$orcid_id.'/works'; 
@@ -773,7 +708,6 @@ $c->{get_works_for_orcid} = sub
 				'Authorization' => 'Bearer '.$token )
 		);
         $request->header( "accept" => "application/json" );
-
 
 	my $response = $ua->request($request);
 	my $user_id;
@@ -793,8 +727,6 @@ $c->{get_works_for_orcid} = sub
 	};
 
 	return $result;	
-
-
 };
 
 
