@@ -113,18 +113,18 @@ sub render_content
 
 		$td_input->appendChild( $repo->render_hidden_field( $fieldname, $value ) );
 		$td_input->appendChild( $repo->call( "render_orcid_id", $repo, $value ) );
-#                $td_input->appendChild( $repo->make_element(
-#                                        "input",
-#                                        type=>"image",
-#                                        src=> "/style/images/action_remove.png",
-#                                       # src=> "/style/images/delete.png",
-#                                        alt=>"Remove",
-#                                        title=>"Remove",
-#                                        name=>"_internal_".$self->{prefix}."_orcid_remove",
-#                                        class => "epjs_ajax",
-#					id => "delete-orcid-button",
-#                                        value=>"1" ));
-#
+                $td_input->appendChild( $repo->make_element(
+                                        "input",
+                                        type=>"image",
+                                       # src=> "/style/images/action_remove.png",
+                                        src=> "/style/images/delete.png",
+                                        alt=>"Remove",
+                                        title=>"Remove",
+                                        name=>"_internal_".$self->{prefix}."_orcid_remove",
+                                        class => "epjs_ajax",
+					id => "delete-orcid-button",
+                                       value=>"1" ));
+
 		my $button = $td3->appendChild( $xml->create_element( "button", 
 					id => "disabled-connect-orcid-button",
 					type => "button",
