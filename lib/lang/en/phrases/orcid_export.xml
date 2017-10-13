@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<!DOCTYPE phrases SYSTEM "entities.dtd">
+
+
+<epp:phrases xmlns="http://www.w3.org/1999/xhtml" xmlns:epp="http://eprints.org/ep3/phrase" xmlns:epc="http://eprints.org/ep3/control">
+
+
+	<epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:export_help">Select the items to export to your ORCID Record</epp:phrase>
+	<epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:export_help_admin">Enter an ORCID iD and select search to find items to export to your ORCID Record</epp:phrase>
+	<epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:search_btn:title">Search</epp:phrase>
+
+	<epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:incorrect_orcid_format">The supplied ORCID iD: <epc:pin name="id"/> has an incorrect format<br />An example of the expected format is: "0001-0002-0034-567X"</epp:phrase>
+	<epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:export_error:no_id">No ORCID iD found, please enter an ORCID iD and select search</epp:phrase>
+
+	<epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:orcid_api_error_undef">The attempt to contact the ORCID registry failed for ORCID iD: <epc:pin name="id"/>. Please check that the appropriate permissions have been granted</epp:phrase>
+	<epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:orcid_api_error">The ORCID request for iD: <epc:pin name="id"/> failed with error code :<epc:pin name="code"/> <epc:pin name="err"/> <epc:pin name="desc"/> </epp:phrase>
+
+
+
+	<epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:export_error:error_getting_works">It has not been possible to get the current works for the supplied ORCID iD</epp:phrase>
+	<epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:export_error:no_items">No items found for the supplied ORCID iD</epp:phrase>
+	<epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:export_error:no_user">No unique user found with the supplied ORCID iD</epp:phrase>
+	<epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:export_error:wrong_user">A different user has been found with the supplied ORCID iD</epp:phrase>
+	<epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:export_error:no_user_permission">The user with the supplied ORCID iD has not granted permission to update their activities data.</epp:phrase>
+
+	<epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:results_title">Title: </epp:phrase>
+	<epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:results_type">Type: </epp:phrase>
+	<epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:results_ids">DOI / PubMed Id: </epp:phrase>
+	<epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:results_no_id"> - </epp:phrase>
+	<epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:exists_on_profile"><em>Item match found on ORCID Profile</em></epp:phrase>
+	<epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:export_source">   Source: </epp:phrase>
+	<epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:export_no_source">No Source details</epp:phrase>
+	<epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:export_title">Title: </epp:phrase>
+	<epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:export_doi">DOI: </epp:phrase>
+	<epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:export_pmid">PubMed Id: </epp:phrase>
+	<epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:export_update"><em>(Update)</em></epp:phrase>
+	<epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:action_export_data">Export selected items</epp:phrase>
+
+	<epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:exported">Exported item <epc:pin name="item"/> to the profile for ORCID iD :<epc:pin name="id"/>. </epp:phrase>
+	<epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:export_failed">Failed to export item <epc:pin name="item"/> to the profile for ORCID iD :<epc:pin name="id"/>. </epp:phrase>
+	<epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:export_no_work_xml">Failed to export item <epc:pin name="item"/>. Unable to form an xml message. </epp:phrase>
+
+
+
+</epp:phrases>
