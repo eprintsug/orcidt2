@@ -53,18 +53,6 @@ print STDERR "####### orcid auth script invalid state\n";
         exit;
 }
 
-my $target_map = $repo->config( "orcid_target_machines" );
-my $host = $repo->config( "host" );
-my $this_machine = $target_map->{$host};
-
-if ( $machine != $this_machine )
-{
-print STDERR "####### orcid auth script invalid machine\n";
-	show_error( $repo, 'invalid_machine' );
-	$repo->terminate;
-        exit;
-}
-
 print STDERR "\n\n####### about to exchange \n\n";
 # Exchange the Authorization Code for an Access Token with the Client ID and Secret.
 
