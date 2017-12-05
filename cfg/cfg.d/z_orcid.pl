@@ -12,7 +12,7 @@
 
 =cut
 
-$c->{orcid_version} =  '2.0';
+$c->{orcid_version} =  '2.1';
 $c->{orcid_member_server} =  'https://sandbox.orcid.org/';
 $c->{orcid_member_api} =  'https://api.sandbox.orcid.org/';
 $c->{orcid_public_api} =  'https://pub.sandbox.orcid.org/';

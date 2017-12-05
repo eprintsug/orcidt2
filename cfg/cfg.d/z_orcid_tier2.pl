@@ -440,7 +440,7 @@ print STDERR "form_orcid_work_xml called for contribs[".Data::Dumper::Dumper($co
 print STDERR "form_orcid_work_xml adding orcid[".$c_orcid."]\n";
 				my $contrib_o = $contrib->appendChild( $xml->create_element( "common:contributor-orcid" ) );
 				my $contrib_o_u = $contrib_o->appendChild( $xml->create_element( "common:uri" ) );
-				$contrib_o_u->appendChild( $xml->create_text_node( "http://orcid.org/".$c_orcid ) );
+				$contrib_o_u->appendChild( $xml->create_text_node( "https://orcid.org/".$c_orcid ) );
 				my $contrib_o_p = $contrib_o->appendChild( $xml->create_element( "common:path" ) );
 				$contrib_o_p->appendChild( $xml->create_text_node( $c_orcid ) );
 				my $contrib_o_h = $contrib_o->appendChild( $xml->create_element( "common:host" ) );
@@ -595,12 +595,12 @@ $c->{render_orcid_id} = sub
 	return $frag unless $repo->call( "valid_orcid_id", $orcid_id );
 
 	my $xml = $repo->xml;
-	my $orcid_link = $frag->appendChild( $xml->create_element( "a", href=>"http://orcid.org" ) );
+	my $orcid_link = $frag->appendChild( $xml->create_element( "a", href=>"https://orcid.org" ) );
 	$orcid_link->appendChild( $xml->create_element( "img", alt => "ORCID logo", 
 					src => "/style/images/orcid_16x16.png", 
 					id => "orcid-id-logo-16" ) );
-	my $orcid_id_link = $frag->appendChild( $xml->create_element( "a", href=>"http://orcid.org/".$orcid_id ) );
-	$orcid_id_link->appendChild( $xml->create_text_node( "http://orcid.org/".$orcid_id ) );
+	my $orcid_id_link = $frag->appendChild( $xml->create_element( "a", href=>"https://orcid.org/".$orcid_id ) );
+	$orcid_id_link->appendChild( $xml->create_text_node( "https://orcid.org/".$orcid_id ) );
 
 	return $frag;
 };
