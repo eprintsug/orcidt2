@@ -144,9 +144,18 @@ sub action_import_data
 		}
 	}
 
-	$self->{processor}->add_message( "message", $repo->html_phrase( "Plugin/Screen/Import:import_completed",
-		count => $repo->xml->create_text_node( $import_count )
-		) );
+
+        if ( $import_count )
+        {
+                $self->{processor}->add_message( "message", $repo->html_phrase( "Plugin/Screen/Import:import_completed",
+                        count => $repo->xml->create_text_node( $import_count )
+                        ) );
+        }
+        else
+        {
+                $self->{processor}->add_message( "warning", $repo->html_phrase( "Plugin/Screen/Import:import_completed_none") );
+        }
+
 	#create a list of imported items and display single item or all
 	my $ds = $repo->dataset( "eprint" );
 	my $list = $ds->list( \@ids );
@@ -198,13 +207,14 @@ sub import_using_plugin
 		},
 	) );
 
-	{
+	eval {
 		open(my $fh, "<", \$id);
 		$plugin->input_fh(
 				dataset => $repo->dataset( "inbox" ),
 				fh => $fh,
 			);
-	}
+	};
+	warn $@ if $@;
 	return $eprint;
 
 }
@@ -233,6 +243,12 @@ sub render
 	my $xml = $repo->xml;
 	my $xhtml = $repo->xhtml;
 
+	my $user = $repo->current_user;
+	my $user_orcid = $user->get_value( 'orcid' ) if $user;
+	unless ( $self->{processor}->{data} )
+	{
+		$self->{processor}->{data} = $user_orcid if $user_orcid;
+	}
 	my $items = $self->{processor}->{results};
 
 	my $frag = $xml->create_document_fragment;
@@ -323,8 +339,8 @@ sub render_results
 			my @dupes = $self->find_duplicate( $work );
 			my $tr = $xml->create_element( "tr" );
 			my $num_td = $tr->appendChild( $xml->create_element( "td" ) );
-			my $item_td = $tr->appendChild( $xml->create_element( "td" ) );
-			$num_td->appendChild( $xml->create_text_node( $n ) );
+			my $item_td = $tr->appendChild( $xml->create_element( "td", class=>'import-orcid-item' ) );
+			#$num_td->appendChild( $xml->create_text_node( $n ) );
 			$item_td->appendChild( $self->html_phrase( "results_title" ) );
 			$item_td->appendChild( $xml->create_text_node( $work->{title} ) );
 			$item_td->appendChild( $xml->create_element( "br" ) );
@@ -335,7 +351,7 @@ sub render_results
 			$item_td->appendChild( $self->html_phrase( "results_source" ) );
 			$item_td->appendChild( $xml->create_text_node( $work->{source} ) );
 			
-			my $td = $tr->appendChild( $xml->create_element( "td" ) );
+			#my $td = $tr->appendChild( $xml->create_element( "td" ) );
 			my $work_val = "putcode:".$work->{"put-code"};
 			if ( $work->{doi} )
 			{
@@ -371,7 +387,7 @@ sub render_results
 					if $dupe ne $dupes[$#dupes];
 			}
 	
-			my $cb = $td->appendChild( $xml->create_element(
+			my $cb = $num_td->appendChild( $xml->create_element(
 				"input",
 				name => 'workcode',
 				value => $work_val,

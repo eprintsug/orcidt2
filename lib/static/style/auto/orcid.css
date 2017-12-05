@@ -29,6 +29,10 @@
 	vertical-align: middle;
 }
 
+td.import-orcid-item {
+	padding-bottom: 1em;
+}
+
 #delete-orcid-button{
 	margin-left: 30px;
 }

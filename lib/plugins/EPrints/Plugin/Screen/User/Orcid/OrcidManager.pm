@@ -572,11 +572,17 @@ sub render_id_selection
 	if ( $value )
 	{
 		$input_div->appendChild( $repo->call( "render_orcid_id", $repo, $value ) );
-		my $rm_action= $input_div->appendChild( $xml->create_element( "input", 
-			value => $self->phrase( "action:remove_id:title" ),
-			type => "submit", 
-			name => "_action_remove_id", 
-			class => "btn btn-uzh-prime" ) );
+
+                $input_div->appendChild( $repo->make_element(
+                                        "input",
+                                        type=>"image",
+                                        src=> "/style/images/delete.png",
+                                        alt=>"Remove",
+                                        title=>"Remove",
+					name => "_action_remove_id", 
+                                        class => "epjs_ajax",
+                                   	id => "delete-orcid-button",
+                                        value=>"1" ));
 
 		my $button = $btn_div->appendChild( $xml->create_element( "button", 
 					id => "disabled-connect-orcid-button",
@@ -762,6 +768,16 @@ sub render_export_data
 	my $input_div = $div->appendChild( $xml->create_element( "div", class=>"orcid_connect_input" ) );
 	my $btn_div = $div->appendChild( $xml->create_element( "div", class=>"orcid_connect_btn" ) );
 
+        # check that the user has granted permission to read their profile data before contnuing.
+        my $rl_granted = (defined $current_user->get_value( 'orcid_rl_token' ));
+        my $au_granted = (defined $current_user->get_value( 'orcid_act_u_token' ));
+        unless ( $rl_granted && $au_granted )
+        {
+                $text_div->appendChild( $self->html_phrase( "export_not_allowed" ) );
+                return $works_div;
+        }
+
+
 	# check permissions before allowing override
 	if ( $current_user->allow( 'orcid/admin' ) )
 	{  
@@ -801,6 +817,8 @@ sub render_export_data
 			  value => $orcid, match=>'EQ', merge => 'ANY' },
 		],
 	);
+
+	#my $current_items = $current_user->owned_eprints_list();
 
         my $h3_4 = $works_div->appendChild( $repo->make_element( "h3" ) );
 	$h3_4->appendChild( $self->html_phrase( "works" ) );
@@ -1211,7 +1229,7 @@ sub export_work
 	my $ua = LWP::UserAgent->new;
 	my $response = $ua->request($req);
 
-#print STDERR "\n\n\n\n####### got response [".Data::Dumper::Dumper($response)."]\n\n";
+print STDERR "\n\n\n\n####### got response [".Data::Dumper::Dumper($response)."]\n\n";
 
 	if ( $response->code > 299 )
 	{

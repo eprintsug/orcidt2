@@ -20,7 +20,7 @@ sub new
 
 	my $self = $class->SUPER::new( %params );
 
-	$self->{name} = "UZH Orcid Import";
+	$self->{name} = "Orcid Import";
 	$self->{advertise} = 1;
 	$self->{visible} = "all";
 	$self->{produce} = [ 'list/eprint' ];
@@ -125,6 +125,18 @@ sub input_text_fh
 		{
 			my $json_vars = JSON::decode_json($result->{data});
 			my $groups = $json_vars->{group};
+			unless ( $groups && scalar @$groups )
+			{
+				$self->{processor}->add_message( "warning", 
+				 	$self->html_phrase( "no_works", 
+					id =>$repo->make_text($oid),
+ 				) ) if $self->{processor};
+			 
+				print STDERR $self->phrase( "no_works", 
+					id =>$repo->make_text($oid),
+ 				)."\n" unless $self->{processor};
+				next;
+			}
 			foreach my $group ( @$groups )
 			{
 				my $summary = $group->{'work-summary'};

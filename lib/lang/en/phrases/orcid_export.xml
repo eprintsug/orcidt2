@@ -4,6 +4,7 @@
 
 <epp:phrases xmlns="http://www.w3.org/1999/xhtml" xmlns:epp="http://eprints.org/ep3/phrase" xmlns:epc="http://eprints.org/ep3/control">
 
+	<epp:phrase id="user_fieldopt_put_codes_code_type_work">Work put code</epp:phrase>
 
 	<epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:export_help">Select the items to export to your ORCID Record</epp:phrase>
 	<epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:export_help_admin">Enter an ORCID iD and select search to find items to export to your ORCID Record</epp:phrase>
@@ -40,6 +41,6 @@
 	<epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:export_failed">Failed to export item <epc:pin name="item"/> to the profile for ORCID iD :<epc:pin name="id"/>. </epp:phrase>
 	<epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:export_no_work_xml">Failed to export item <epc:pin name="item"/>. Unable to form an xml message. </epp:phrase>
 
-
+	<epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:export_not_allowed">Please grant Read Limited and Activities Update permissions to enable the Export process</epp:phrase>
 
 </epp:phrases>

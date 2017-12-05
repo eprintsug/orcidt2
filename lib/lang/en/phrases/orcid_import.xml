@@ -15,12 +15,17 @@
 	<epp:phrase id="Plugin/Screen/Import/UZHOrcid:results_ext_id_pmid">PMID: </epp:phrase>
 	<epp:phrase id="Plugin/Screen/Import/UZHOrcid:duplicates"><strong>Possible duplicates: </strong></epp:phrase>
 	<epp:phrase id="Plugin/Screen/Import/UZHOrcid:action_import_data">Import Selected Items</epp:phrase>
+        <epp:phrase id="Plugin/Screen/Import:import_completed_none">No items were imported.</epp:phrase>
 	<epp:phrase id="Plugin/Import/UZHOrcid:incorrect_orcid_format">The supplied ORCID iD: <epc:pin name="id"/> has an incorrect format<br />An example of the expected format is: "0001-0002-0034-567X"</epp:phrase>
 
 	<epp:phrase id="Plugin/Import/UZHOrcid:orcid_api_error_undef">The attempt to contact the ORCID registry failed for ORCID iD: <epc:pin name="id"/></epp:phrase>
 	<epp:phrase id="Plugin/Import/UZHOrcid:orcid_api_error">The ORCID request for iD: <epc:pin name="id"/> failed with error code :<epc:pin name="code"/> <epc:pin name="err"/> <epc:pin name="desc"/> </epp:phrase>
 
+	<epp:phrase id="Plugin/Import/UZHOrcid:no_works">It was not possible to find works data in the ORCID registry for ORCID iD: <epc:pin name="id"/></epp:phrase>
 
 	<epp:phrase id="cgi/lookup/name:uzh_author"> UZH</epp:phrase>
+	<epp:phrase id="cgi/lookup/name:source_profile"> source: User Profile</epp:phrase>
+	<epp:phrase id="cgi/lookup/name:source_publication"> source: Publication</epp:phrase>
+
 
 </epp:phrases>

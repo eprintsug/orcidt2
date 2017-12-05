@@ -279,7 +279,7 @@ $c->{form_orcid_work_xml} = sub
 {
         my( $repo, $item_id, $put_code ) = @_;
 
-print STDERR "form_orcid_work_xml called\n";
+print STDERR "form_orcid_work_xml called for item[".$item_id."]\n";
 	my $ds = $repo->dataset( "eprint" );
 	my $item = $ds->dataobj( $item_id );
 
@@ -352,7 +352,7 @@ print STDERR "form_orcid_work_xml called\n";
 	my $citation_type = $citation->appendChild( $xml->create_element( "work:citation-type" ) );
 	$citation_type->appendChild( $xml->create_text_node( "formatted-unspecified" ) );
 	my $citation_text = $citation->appendChild( $xml->create_element( "work:citation-value" ) );
-	$citation_text->appendChild( $item->render_citation( "default" ) );
+	$citation_text->appendChild( $item->render_citation( "orcid" ) );
 	
 	#work:type
 	my $work_map = $repo->config( "orcid_work_type_map" );
@@ -367,7 +367,7 @@ print STDERR "form_orcid_work_xml called\n";
 	if ( $date && $date_type && $date_type eq 'published' )
 	{
 		my @parts  = split "-", $date; 
-		my $pub_date = $work->appendChild( $xml->create_element( "common:publication-date" ) );
+		my $pub_date = $work_xml->appendChild( $xml->create_element( "common:publication-date" ) );
 		my $pub_date_yr = $pub_date->appendChild( $xml->create_element( "common:year" ) );
 		$pub_date_yr->appendChild( $xml->create_text_node( $parts[0] ) );
 		if ( $parts[1] )
@@ -418,15 +418,16 @@ print STDERR "form_orcid_work_xml called\n";
 	}
 
 	#work:url
-	my $item_url = $work->appendChild( $xml->create_element( "work:url" ) );
+	my $item_url = $work_xml->appendChild( $xml->create_element( "work:url" ) );
 	$item_url->appendChild( $xml->create_text_node( $item->get_url() ) );
 
 	#work:contributors
 	my $contributors = $item->get_value( "contributors" );
 	if ( $contributors )
 	{
+print STDERR "form_orcid_work_xml called for contribs[".Data::Dumper::Dumper($contributors)."]\n";
 		my $sequence = "first";
-		my $contribs = $work->appendChild( $xml->create_element( "work:contributors" ) );
+		my $contribs = $work_xml->appendChild( $xml->create_element( "work:contributors" ) );
 		foreach my $contributor ( @$contributors )
 		{
 			next unless $contributor;
@@ -436,13 +437,14 @@ print STDERR "form_orcid_work_xml called\n";
 			my $c_role = $contributor->{ "type" };
 			if ( $c_orcid )
 			{
+print STDERR "form_orcid_work_xml adding orcid[".$c_orcid."]\n";
 				my $contrib_o = $contrib->appendChild( $xml->create_element( "common:contributor-orcid" ) );
 				my $contrib_o_u = $contrib_o->appendChild( $xml->create_element( "common:uri" ) );
 				$contrib_o_u->appendChild( $xml->create_text_node( "http://orcid.org/".$c_orcid ) );
 				my $contrib_o_p = $contrib_o->appendChild( $xml->create_element( "common:path" ) );
-				$contrib_o_u->appendChild( $xml->create_text_node( $c_orcid ) );
+				$contrib_o_p->appendChild( $xml->create_text_node( $c_orcid ) );
 				my $contrib_o_h = $contrib_o->appendChild( $xml->create_element( "common:host" ) );
-				$contrib_o_u->appendChild( $xml->create_text_node( "orcid.org" ) );
+				$contrib_o_h->appendChild( $xml->create_text_node( "orcid.org" ) );
 			}
 			if ( $c_name )
 			{
@@ -467,12 +469,12 @@ print STDERR "form_orcid_work_xml called\n";
 	my $language = $item->get_value( "language" );
 	if ( $language )
 	{
-		my $item_lang = $work->appendChild( $xml->create_element( "common:language-code" ) );
+		my $item_lang = $work_xml->appendChild( $xml->create_element( "common:language-code" ) );
 		$item_lang->appendChild( $xml->create_text_node( $language ) );
 	}
 	
 	#common:country
-	my $item_country = $work->appendChild( $xml->create_element( "common:country" ) );
+	my $item_country = $work_xml->appendChild( $xml->create_element( "common:country" ) );
 	$item_country->appendChild( $xml->create_text_node( "CH" ) );
 
 	my $prolog = '<?xml version="1.0" encoding="UTF-8"?>'; 
@@ -736,19 +738,11 @@ $c->{get_works_for_orcid} = sub
 # Enable/disable the Orcid plugins
 #
 
-$c->{plugins}->{"Import::Orcid"}->{params}->{disable} = 1;
+#$c->{plugins}->{"Import::Orcid"}->{params}->{disable} = 0;
 $c->{plugins}->{"Import::UZHOrcid"}->{params}->{disable} = 0;
 $c->{plugins}->{"InputForm::Component::Field::OrcidId"}->{params}->{disable} = 0;
-$c->{plugins}->{"Orcid::Add"}->{params}->{disable} = 0;
-$c->{plugins}->{"Orcid::AddWorks"}->{params}->{disable} = 0;
 $c->{plugins}->{"Orcid::Auth"}->{params}->{disable} = 0;
-$c->{plugins}->{"Orcid::ReadBio"}->{params}->{disable} = 0;
-$c->{plugins}->{"Orcid::Read"}->{params}->{disable} = 0;
-$c->{plugins}->{"Orcid::ReadProfile"}->{params}->{disable} = 0;
-$c->{plugins}->{"Orcid::ReadResearch"}->{params}->{disable} = 0;
 $c->{plugins}->{"Orcid"}->{params}->{disable} = 0;
-$c->{plugins}->{"Screen::Admin::Orcid::OrcidManager"}->{params}->{disable} = 1;
-$c->{plugins}->{"Screen::Import::Orcid"}->{params}->{disable} = 0;
 $c->{plugins}->{"Screen::Import::UZHOrcid"}->{params}->{disable} = 0;
 $c->{plugins}->{"Screen::User::Orcid::OrcidManager"}->{params}->{disable} = 0;
 
