@@ -1,12 +1,12 @@
 orcidt2
 =======
 
-ORCID Tier 2 api framework
+ORCID Member api framework
 
-The purpose of this plugin is to provide a framework for working with the ORCID Tier 2 api.
-The plugin does require a sandbox account which can be obtained for free. Use of the actual tier 2 api does require ORCID membership which is not free.
+The purpose of this plugin is to provide a framework for working with the ORCID Member api.
+The plugin does require a sandbox account which can be obtained for free. Use of the actual member api does require ORCID membership which is not free.
 
-This version is designed to work with V2.0 of the ORCID Registry API
+This version is designed to work with V2.1 of the ORCID Registry API
 
 Config
 
