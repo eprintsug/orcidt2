@@ -806,7 +806,7 @@ sub render_export_data
 		$btn_div->appendChild( $repo->render_action_buttons( %$btn ) );
 	}
 	my $ds = $repo->dataset("archive"); 
-	my $current_items = $ds->search(
+	my $contrib_items = $ds->search(
 		satisfy_all => 0,
 		filters =>  [
 			{ meta_fields => [ 
@@ -817,8 +817,19 @@ sub render_export_data
 			  value => $orcid, match=>'EQ', merge => 'ANY' },
 		],
 	);
+	my $owned_items = $ds->search(
+		satisfy_all => 0,
+		filters =>  [
+			{ meta_fields => [ 
+				'userid', 
+				], 
+			  value => $current_user->get_id, match=>'EQ', merge => 'ANY' },
+		],
+	);
 
-	#my $current_items = $current_user->owned_eprints_list();
+
+	#my $owned_items = $current_user->owned_eprints_list();
+	my $current_items = $owned_items->union( $contrib_items );
 
         my $h3_4 = $works_div->appendChild( $repo->make_element( "h3" ) );
 	$h3_4->appendChild( $self->html_phrase( "works" ) );
@@ -828,7 +839,6 @@ sub render_export_data
 		$works_div->appendChild( $self->html_phrase( "export_error:no_items" ) );
 		return $works_div;
 	}
-
 	my $current_works = $repo->call( "get_works_for_orcid", $repo, $orcid );
 	unless ( $current_works )
 	{
@@ -980,7 +990,20 @@ sub render_results
 			my $item_td = $tr->appendChild( $xml->create_element( "td" ) );
 			$num_td->appendChild( $xml->create_text_node( $n ) );
 			$item_td->appendChild( $self->html_phrase( "results_title" ) );
-			$item_td->appendChild( $xml->create_text_node( $item->get_value('title') ) );
+			my $title = "";
+			my $titles = $item->get_value('title');
+			if ( $titles )
+			{
+				if ( ref($titles) eq 'ARRAY' )
+				{
+					$title = $titles->[0]->{text};
+				}
+				else
+				{
+					$title = $titles;
+				}
+			}
+			$item_td->appendChild( $xml->create_text_node( $title ) );
 			$item_td->appendChild( $xml->create_element( "br" ) );
 			$item_td->appendChild( $self->html_phrase( "results_type" ) );
 			my $item_type = $item->get_value( 'type' ); 

@@ -738,7 +738,7 @@ $c->{get_works_for_orcid} = sub
 # Enable/disable the Orcid plugins
 #
 
-#$c->{plugins}->{"Import::Orcid"}->{params}->{disable} = 0;
+$c->{plugins}->{"Import::Orcid"}->{params}->{disable} = 1;
 $c->{plugins}->{"Import::UZHOrcid"}->{params}->{disable} = 0;
 $c->{plugins}->{"InputForm::Component::Field::OrcidId"}->{params}->{disable} = 0;
 $c->{plugins}->{"Orcid::Auth"}->{params}->{disable} = 0;
