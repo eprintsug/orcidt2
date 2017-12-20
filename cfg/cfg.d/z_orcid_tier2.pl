@@ -264,6 +264,30 @@ $c->{get_orcid_authorise_url} = sub
 =begin InternalDoc
 
 =over
+
+=item get_orcid_revoke_url ( $repo, $user_id, $item_id, $scope, $activity, $orcid_id )
+
+=back
+
+Utility routine to form the revoke token url
+
+=end InternalDoc
+
+=cut
+
+$c->{get_orcid_revoke_url} = sub
+{
+        my( $repo, ) = @_;
+
+	my $orcid_revoke_url =  $repo->config( "orcid_member_server" ) . 'oauth/revoke'; 
+	
+	return $orcid_revoke_url;
+};
+
+
+=begin InternalDoc
+
+=over
  
 =item form_orcid_work_xml ( $repo, $item_id, )
 
@@ -745,6 +769,7 @@ $c->{plugins}->{"Orcid::Auth"}->{params}->{disable} = 0;
 $c->{plugins}->{"Orcid"}->{params}->{disable} = 0;
 $c->{plugins}->{"Screen::Import::UZHOrcid"}->{params}->{disable} = 0;
 $c->{plugins}->{"Screen::User::Orcid::OrcidManager"}->{params}->{disable} = 0;
+$c->{plugins}->{"Screen::Admin::Orcid::OrcidManager"}->{params}->{disable} = 1;
 
 
 

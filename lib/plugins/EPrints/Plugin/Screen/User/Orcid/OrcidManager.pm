@@ -14,6 +14,7 @@ our @ISA = ( 'EPrints::Plugin::Screen' );
 
 use strict;
 use EPrints::Const qw( :xml ); # XML node type constants
+use HTTP::Request::Common;
 
 sub new
 {
@@ -426,12 +427,47 @@ sub revoke_permission
 {
         my( $self, $scope ) = @_;
         my $repo = $self->{session};
+	my $xml = $repo->xml;
+	my $user = $repo->current_user;
+	return unless $user;
 
 	my $scope_map = $repo->config( "orcid_scope_map" );
 	my $field = $scope_map->{$scope}; 
-	my $user = $repo->current_user;
+	my $token = $user->get_value( $field );
+print STDERR "revoke_permission scope[".$scope."] field[".$field."] token[".$token."]\n";
 	$user->set_value( $field, undef );
 	$user->commit;
+
+	# Use the api to revoke the permission on the registry
+	# At the moment there are a cople of issues with this
+	# firstly the code below returns a 401 Unauthorized error
+	# secondly if we get all permissions in one call then the tokens
+	# are the same and this method appears to revoke all permissions
+	# with that token so I cannot just revoke the "update activities" 
+	# token
+
+	#my $client_id = $repo->config( "orcid_client_id" );
+	#my $client_secret = $repo->config( "orcid_client_secret" );
+
+	#my $revoke_url = $repo->call( "get_orcid_revoke_url", $repo, ); 
+#print STDERR "revoke_permission scope[".$scope."] field[".$field."] token[".$token."] url[".$revoke_url."]\n";
+	#my $req = POST( $revoke_url,
+	#		[ client_id => $client_id,
+	#		  client_secret => $client_secret,
+	#		  token => $token ] );
+	#$req->header('content-type' => 'application/json');
+
+	#my $ua = LWP::UserAgent->new;
+	#my $response = $ua->request($req);
+
+#print STDERR "\n\n\n\n####### got REVOKE response [".Data::Dumper::Dumper($response)."]\n\n";
+	#if ( $response->code > 299 )
+	#{
+	#	$self->{processor}->add_message( "warning",
+	#		$self->html_phrase( "orcid_revoke_error", code=> $xml->create_text_node($response->code) ) );
+	#	return 0;
+	#}
+
 }
 
 =begin InternalDoc
