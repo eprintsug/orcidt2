@@ -322,7 +322,7 @@ sub render_results
 		dataset => $repo->dataset( "inbox" ),
 		ids => [0 .. ($total - 1)],
 		items => {
-				map { ($offset + $i++) => $_ } @$items
+				map { ( $i++ ) => $_ } @$items
 			}
 		);
 
