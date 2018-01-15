@@ -161,7 +161,7 @@ sub action_export_data
 		{
 			$id = $id_to_export;
 		}
-		my ( $success, $new_put_code ) = $self->export_work( $id, $orcid_to_update, $token, $put_code );
+		my ( $success, $new_put_code ) = $repo->call( "export_work", $repo, $self->{processor}, $id, $orcid_to_update, $token, $put_code );
 		unless ( $success )
 		{
 			$self->{processor}->add_message( "warning",
@@ -1019,7 +1019,7 @@ sub render_results
 			my $item = $ds->dataobj( $item_id );
 			return unless $item;
 
-			my $export = $self->find_exports( $item, $works, $put_codes  );
+			my $export = $repo->call( 'find_orcid_exports', $item, $works, $put_codes  );
 
 			my $tr = $xml->create_element( "tr" );
 			my $num_td = $tr->appendChild( $xml->create_element( "td" ) );
@@ -1129,184 +1129,6 @@ sub render_results
 	$form->appendChild( $repo->render_action_buttons( export_data => $self->phrase( "action_export_data" ), ) );
 	
 	return $form;
-}
-
-=begin InternalDoc
-
-=over
-
-=item find_exports
-
-=back
-
-This method looks up the put_code, doi, pmid or title of the item in the works data obtained from 
-the ORCID Registry to identify if this user has already exported it.
-
-=end InternalDoc
-
-=cut
-
-sub find_exports
-{
-	my( $self, $item, $works, $put_codes ) = @_;
-
-	my $export = {};
-	my $match_found = 0;
-	my $put_code;
-	foreach my $code ( @$put_codes )
-	{
-		if ( $code->{item} && $code->{item} eq $item->get_id() )
-		{
-			$put_code = $code->{code};
-		}
-	}
-	my $item_doi = $item->get_value( "doi" );
-	my $item_pmid = $item->get_value( "pubmed_id" );
-	my $item_title = $item->get_value( "title" );
-
-	my $groups = $works->{group};
-	foreach my $group ( @$groups )
-	{
-		my $summary = $group->{'work-summary'};
-                foreach my $ws ( @$summary )
-                {
-			my $doi;
-			my $pmid;
-			if ( $ws->{'external-ids'} && $ws->{'external-ids'}->{'external-id'} )
-			{
-				foreach my $ext_id ( @{$ws->{'external-ids'}->{'external-id'}} )
-				{
-					my $id_type = $ext_id->{'external-id-type'};
-					my $id_val = $ext_id->{'external-id-value'};
-					$doi = $id_val if $id_type eq 'doi';
-					$pmid = $id_val if $id_type eq 'pmid';
-				}
-			}
-				
-			my $code = $ws->{'put-code'};;
-			my $source = $ws->{'source'}->{'source-name'}->{value}
-                                             if $ws->{'source'} && 
-						$ws->{'source'}->{'source-name'} && 
-						$ws->{'source'}->{'source-name'}->{value};
-			my $title = $ws->{title}->{title}->{value}
-                                             if $ws->{title} && 
-						$ws->{title}->{title} && 
-						$ws->{title}->{title}->{value};
-			if ( $code && $put_code && $code eq $put_code )
-			{
-				$export->{put_code} = $code;
-				$export->{source} = $source if $source;
-				$export->{title} = $title if $title;
-				$export->{doi} = $doi if $doi;
-				$export->{pmid} = $pmid if $pmid;
-				$match_found++;
-			}  
-			elsif ( $doi && $item_doi && $doi eq $item_doi )
-			{
-				$export->{source} = $source if $source;
-				$export->{title} = $title if $title;
-				$export->{doi} = $doi if $doi;
-				$export->{pmid} = $pmid if $pmid;
-				$match_found++;
-			}
-			elsif ( $pmid && $item_pmid && $pmid eq $item_pmid )
-			{
-				$export->{source} = $source if $source;
-				$export->{title} = $title if $title;
-				$export->{doi} = $doi if $doi;
-				$export->{pmid} = $pmid if $pmid;
-				$match_found++;
-			}
-			elsif ( $title && $item_title && $title eq $item_title )
-			{
-				$export->{source} = $source if $source;
-				$export->{title} = $title if $title;
-				$export->{doi} = $doi if $doi;
-				$export->{pmid} = $pmid if $pmid;
-				$match_found++;
-			}
-		}
-	}
-
-	return $export if $match_found;
-	return undef;
-}
-
-
-=begin InternalDoc
-
-=over
-
-=item export_work
-
-=back
-
-This method forms and sends the xml for exporting an item to the ORCID 
-Registry. The export may be a create or update depending upon the 
-existence of a put code. The item is exported to the profile for the 
-supplied ORCID iD  
-
-=end InternalDoc
-
-=cut
-
-sub export_work
-{
-	my( $self, $item_id, $orcid_id, $token, $put_code ) = @_;
-
-	my $repo = $self->{repository};
-	my $xml = $repo->xml;
-	return unless $orcid_id;
-
-	my $work_xml = $repo->call( "form_orcid_work_xml", $repo, $item_id, $put_code ); 
-	unless ( $work_xml )
-	{
-		$self->{processor}->add_message( "warning", 
-			$self->html_phrase( "export_no_work_xml", item=>$repo->make_text( $item_id )  ) );
-		return;
-	}
-
-	my $url =  $repo->config( "orcid_member_api" ) . 'v' .$repo->config( "orcid_version" ).'/'.$orcid_id.'/work'; 
-
-	my $req;
-        if ( $put_code )
-        {
-                $url .= "/".$put_code;
-                $req = HTTP::Request->new(PUT => $url, );
-        }
-        else
-        {
-                $req = HTTP::Request->new(POST => $url, );
-        }
-
-	$req->header('content-type' => 'application/orcid+xml');
-	$req->header('Authorization' => 'Bearer '.$token);
-		 
-	# add POST data to HTTP request body
-	$req->content(Encode::encode("utf8", $work_xml));
-
-	my $ua = LWP::UserAgent->new;
-	my $response = $ua->request($req);
-
-print STDERR "\n\n\n\n####### got response [".Data::Dumper::Dumper($response)."]\n\n";
-
-	if ( $response->code > 299 )
-	{
-		$self->{processor}->add_message( "warning",
-			$self->html_phrase( "orcid_export_error", code=> $xml->create_text_node($response->code) ) );
-		return 0;
-	}
-	# a new work was created so get the put_code and return it to the caller.
-	my $put_code_type = "work";
-	if ( $response->code == 201 && 
-	     $response->message() eq 'Created' && 
-	     $response->header("location") =~ /\/$orcid_id\/$put_code_type\/(\d+)$/ )
-	{
-		my $this_code = $1;
-		return ( 1, $this_code ) if $this_code > 1;
-	}
-	
-	return 1;
 }
 
 

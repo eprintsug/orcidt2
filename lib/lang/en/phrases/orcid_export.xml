@@ -43,4 +43,22 @@
 
 	<epp:phrase id="Plugin/Screen/User/Orcid/OrcidManager:export_not_allowed">Please grant Read Limited and Activities Update permissions to enable the Export process</epp:phrase>
 
+	<epp:phrase id="Plugin/Screen/EPrint/ExportToOrcid:title">Export to ORCID</epp:phrase>
+	<epp:phrase id="Plugin/Screen/EPrint/ExportToOrcid:description">Export the item to the connected ORCID account</epp:phrase>
+	<epp:phrase id="Plugin/Screen/EPrint/ExportToOrcid:export_btn">Export</epp:phrase>
+	<epp:phrase id="Plugin/Screen/EPrint/ExportToOrcid:error_getting_works_data">There has been an error reading ORCID Works data: <epc:pin name="desc" /></epp:phrase>
+	<epp:phrase id="Plugin/Screen/EPrint/ExportToOrcid:similar_work"><div><img src="{$config{rel_path}}/style/images/warning.png" width="20" height="20" /> A similar work already exists on your ORCID profile: <epc:pin name="sim_title" /></div></epp:phrase>
+	<epp:phrase id="Plugin/Screen/EPrint/ExportToOrcid:orcid_export_ok">Data Export to ORCID was successful for item: <epc:pin name="id" /></epp:phrase>
+	<epp:phrase id="Plugin/Screen/EPrint/ExportToOrcid:orcid_export_error">Data Export to ORCID error: <epc:pin name="code" />  </epp:phrase>
+	<epp:phrase id="Plugin/Screen/EPrint/ExportToOrcid:not_able_to_export">Unable to export data to ORCID at the moment. Please check that you have a valid ORCID iD</epp:phrase>
+	<epp:phrase id="Plugin/Screen/EPrint/ExportToOrcid:exists_on_profile"><em>Item match found on ORCID Profile</em></epp:phrase>
+	<epp:phrase id="Plugin/Screen/EPrint/ExportToOrcid:export_source">   Source: </epp:phrase>
+	<epp:phrase id="Plugin/Screen/EPrint/ExportToOrcid:export_no_source">No Source details</epp:phrase>
+	<epp:phrase id="Plugin/Screen/EPrint/ExportToOrcid:export_title">Title: </epp:phrase>
+	<epp:phrase id="Plugin/Screen/EPrint/ExportToOrcid:export_doi">DOI: </epp:phrase>
+	<epp:phrase id="Plugin/Screen/EPrint/ExportToOrcid:export_pmid">PubMed Id: </epp:phrase>
+	<epp:phrase id="Plugin/Screen/EPrint/ExportToOrcid:export_update"><em>(Update)</em></epp:phrase>
+	<epp:phrase id="Plugin/Screen/EPrint/ExportToOrcid:user_has_not_given_permission">The user has not granted permission for this action</epp:phrase>
+	
+
 </epp:phrases>
