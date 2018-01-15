@@ -69,7 +69,7 @@ sub action_orcid_export
 	my $orcid_id = $repo->param( "_export_orcid_id" );
 	my $token = $repo->param( "_export_token" );
 	my $put_code = $repo->param( "_export_put_code" );
-	my $item_id = $repo->param( "_export_code" );
+	my $item_id = $repo->param( "eprintid" );
 	my $orcid_manager_plugin = $repo->plugin( "Screen::User::Orcid::OrcidManager" );
 	if ( $item_id && $orcid_id && $user_id && $orcid_manager_plugin )
 	{
